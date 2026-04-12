@@ -25,8 +25,8 @@ pip install -r pi/requirements.txt
 python pi/main.py
 
 ## Flashing an ESP32
-Open esp32/esp32_1/esp32_1.ino (or esp32_2) in Arduino IDE.
-Select board: ESP32 Dev Module. Flash normally.
+Open esp32/esp32_1/ in vscode with platformIO extension.
+Detect Port/Board. Build/Upload normally.
 
 ## Serial protocol
 See docs/serial.md.
