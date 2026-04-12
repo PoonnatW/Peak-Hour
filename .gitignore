@@ -205,3 +205,11 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Arduino build output — compiled binaries, not source
+esp32/esp32_1/build/
+esp32/esp32_2/build/
+
+# OS clutter
+.DS_Store        # Mac finder metadata
+Thumbs.db        # Windows thumbnail cache
