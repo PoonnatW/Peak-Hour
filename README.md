@@ -14,6 +14,9 @@ esp32/      → Arduino sketches for ESP32 #1 and #2
 See docs/pinout.md for all GPIO/pin assignments, subject to change once hardware.
 Both ESP32s connect to the Pi via USB.
 
+Current Hardware layout:
+![Image](https://github.com/user-attachments/assets/287eeea5-ddde-44ca-b779-e81385c1837e)
+
 ## Running the Pi code
 # 1. Install dependencies
 pip install -r pi/requirements.txt
