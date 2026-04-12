@@ -213,3 +213,6 @@ esp32/esp32_2/build/
 # OS clutter
 .DS_Store        # Mac finder metadata
 Thumbs.db        # Windows thumbnail cache
+
+# PlatformIO build output
+.pio/
