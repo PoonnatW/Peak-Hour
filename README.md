@@ -15,6 +15,9 @@ See docs/pinout.md for all GPIO/pin assignments, subject to change once hardware
 Both ESP32s connect to the Pi via USB.
 
 Current Hardware layout:
+![Image](https://github.com/user-attachments/assets/b83d625e-6efe-4eab-887d-eb6a78a45f10)
+
+Old Hardware layout:
 ![Image](https://github.com/user-attachments/assets/f3c1d204-5ea3-498e-800a-692d3c5acda6)
 
 ## Running the Pi code
