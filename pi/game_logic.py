@@ -1,5 +1,6 @@
 import csv
 import os
+import time
 import config
 
 class GamePiece:
@@ -40,6 +41,9 @@ class GameLogic:
         self.plate_contents = {}   # plate reader id -> GamePiece
         self.ice_cream_val = 0
         
+        self.state = "idle"
+        self.state_time = time.time()
+        
     def load_data(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         pieces_path = os.path.join(base_dir, "game_pieces.csv")
@@ -77,8 +81,8 @@ class GameLogic:
                 # We reuse GamePiece instances if they exist, or create new
                 piece = self._get_or_create_piece(value, piece_name)
                 
-                # If reader is 0-6 it's a plate
-                if isinstance(reader_id, int) and 0 <= reader_id <= 6:
+                # If reader is 2-8 it's a plate
+                if isinstance(reader_id, int) and 2 <= reader_id <= 8:
                     self.plate_contents[reader_id] = piece
                     piece.location = f"Plate {reader_id}"
                 # If reader is in stations
@@ -112,6 +116,10 @@ class GameLogic:
             except:
                 pass
                 
+        elif msg_type == "BELL":
+            if self.state == "playing":
+                self.bell_pressed()
+                
     def _get_or_create_piece(self, uid, name):
         # Look for existing piece to maintain doneness state
         for piece in self.station_contents.values():
@@ -135,9 +143,12 @@ class GameLogic:
                     self.serial.send_command("LED", led_id, "ON")
 
     def set_recipe(self, uid):
+        if self.state != "idle":
+            return
         if uid in self.recipes_db:
             recipe = self.recipes_db[uid]
             self.active_recipe = recipe
+            self.change_state("recipe_scanned")
             self.display.show_recipe(recipe["name"], recipe["ingredients"])
             # Clear all current doneness for a fresh start 
             self._reset_all_doneness()
@@ -155,16 +166,53 @@ class GameLogic:
         self._reset_all_doneness()
         self.active_recipe = None
         self.display.show_recipe("None", [])
+        self.change_state("idle")
+
+    def change_state(self, new_state):
+        self.state = new_state
+        self.state_time = time.time()
+        print(f"[LOGIC] State changed to: {new_state}")
+
+    def update(self):
+        now = time.time()
+        elapsed = now - self.state_time
+        
+        if self.state == "recipe_scanned":
+            if elapsed > 1:
+                self.change_state("showcase")
+                # display showcase implementation is pending art team
+        elif self.state == "showcase":
+            if elapsed > 5:
+                self.change_state("countdown")
+                self.display.play_sound("countdown")
+        elif self.state == "countdown":
+            if elapsed > 3:
+                self.change_state("playing")
+                # display game start splash is pending
+        elif self.state == "playing":
+            remaining = 480 - elapsed
+            if remaining <= 0:
+                self.display.show_error("Time's up!")
+                self.display.play_sound("error")
+                self.change_state("lose")
+            elif remaining <= 60 and remaining + 1 > 60:
+                self.display.play_sound("alarm")
+        elif self.state in ["win", "lose"]:
+            if elapsed > 5:
+                self.reset_pressed()
 
     def bell_pressed(self):
-        self.serial.send_command("BELL", 0, "PRESSED")
+        self.change_state("checking")
+        self.display.play_sound("bell")
         
         if not self.active_recipe:
             self.display.show_error("No active recipe!")
             self.display.play_sound("error")
+            self.change_state("lose")
             return
             
-        required = self.active_recipe["ingredients"].copy()
+        # Ignore empty ingredient requirement if recipe is just a stub
+        required = [ing for ing in self.active_recipe["ingredients"] if ing.strip()]
         
         # Check plate contents
         for piece in self.plate_contents.values():
@@ -174,19 +222,23 @@ class GameLogic:
                 else:
                     self.display.show_error(f"{piece.name} is not fully cooked!")
                     self.display.play_sound("error")
+                    self.change_state("lose")
                     return
                     
         if len(required) > 0:
             self.display.show_error(f"Missing ingredients on plates: {', '.join(required)}")
             self.display.play_sound("error")
+            self.change_state("lose")
             return
             
-        # Check ice cream
-        if self.ice_cream_val < config.ICE_CREAM_MIN or self.ice_cream_val > config.ICE_CREAM_MAX:
+        # Ice cream check (deferred for now, but keeping error block as stub)
+        if self.ice_cream_val > 0 and (self.ice_cream_val < config.ICE_CREAM_MIN or self.ice_cream_val > config.ICE_CREAM_MAX):
              self.display.show_error("Ice cream station not complete/in range!")
              self.display.play_sound("error")
+             self.change_state("lose")
              return
              
         # All good!
         self.display.show_win()
         self.display.play_sound("win")
+        self.change_state("win")

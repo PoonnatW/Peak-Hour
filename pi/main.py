@@ -22,12 +22,9 @@ def main():
     serial_handler.start_listening(logic.process_message)
     
     # Setup physical buttons based on docs/pinout.md
-    # Bell = GPIO 27, Reset = GPIO 22
+    # Reset = GPIO 22 (Bell moved to ESP1)
     try:
-        bell_btn = Button(27, pull_up=True, bounce_time=0.1)
         reset_btn = Button(22, pull_up=True, bounce_time=0.1)
-        
-        bell_btn.when_pressed = logic.bell_pressed
         reset_btn.when_pressed = logic.reset_pressed
         print("Hardware buttons initialized.")
     except Exception as e:
@@ -39,6 +36,7 @@ def main():
     try:
         while True:
             time.sleep(1)
+            logic.update()
     except KeyboardInterrupt:
         print("\nExiting...")
     finally:
