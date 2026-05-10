@@ -28,9 +28,11 @@ class GamePiece:
         )
 
 class GameLogic:
-    def __init__(self, serial_handler, display):
+    def __init__(self, serial_handler, display, hardware=None):
         self.serial = serial_handler
         self.display = display
+        self.hardware = hardware
+        self.last_angle = None
         
         self.pieces_db = {}
         self.recipes_db = {}
@@ -134,8 +136,26 @@ class GameLogic:
         if station_name in self.station_contents:
             piece = self.station_contents[station_name]
             piece.add_operation(op_type)
-            # Check if threshold met
+            
+            # Update Neopixels for food doneness (only for heat stations)
             req = config.THRESHOLDS.get(piece.name, {}).get(op_type, 0)
+            if self.hardware and req > 0 and station_name in config.LEDS:
+                if station_name != "Vegetable Washer": # Veggie washer uses audio
+                    led_idx = config.LEDS[station_name]
+                    progress = piece.operations[op_type] / req
+                    if progress < 0.5:
+                        self.hardware.set_led_color(led_idx, (255, 0, 0)) # Red
+                    elif progress < 1.0:
+                        self.hardware.set_led_color(led_idx, (255, 255, 0)) # Yellow
+                    else:
+                        self.hardware.set_led_color(led_idx, (0, 255, 0)) # Green
+
+            # Check if threshold met
+            if req > 0 and piece.operations[op_type] == req:
+                # Play audio cue for Vegetable Washer when exactly done
+                if station_name == "Vegetable Washer":
+                    self.display.play_sound("bell") # Use the bell sound for washer
+
             if req > 0 and piece.operations[op_type] >= req:
                 # Turn on LED for this station
                 if station_name in config.LEDS:
@@ -161,6 +181,8 @@ class GameLogic:
         # Turn off all LEDs
         for led_id in config.LEDS.values():
             self.serial.send_command("LED", led_id, "OFF")
+        if self.hardware:
+            self.hardware.clear_leds()
 
     def reset_pressed(self):
         self._reset_all_doneness()
@@ -173,7 +195,28 @@ class GameLogic:
         self.state_time = time.time()
         print(f"[LOGIC] State changed to: {new_state}")
 
+    def hardware_button_pressed(self):
+        # Progress all meat/food in deep fryers by 1 step
+        # The physical button handles presses for deep fryers
+        for station in ["Deep Fryer 1", "Deep Fryer 2"]:
+            if station in self.station_contents:
+                self._handle_operation(station, "presses")
+
     def update(self):
+        # Update AS5600 for Vegetable Washer
+        if self.hardware:
+            angle = self.hardware.read_as5600_angle()
+            if angle is not None:
+                if self.last_angle is not None:
+                    diff = abs(angle - self.last_angle)
+                    if diff > 2048:
+                        diff = 4096 - diff
+                    if diff > 500: # Threshold for a spin
+                        self._handle_operation("Vegetable Washer", "spins")
+                        self.last_angle = angle
+                else:
+                    self.last_angle = angle
+
         now = time.time()
         elapsed = now - self.state_time
         

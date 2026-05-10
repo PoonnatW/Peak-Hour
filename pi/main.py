@@ -6,6 +6,7 @@ from gpiozero import Button
 from serial_handler import SerialHandler
 from game_logic import GameLogic
 from display import DisplayService
+from hardware_controller import HardwareController
 
 def main():
     print("Starting Peak Hour Game Controller...")
@@ -15,11 +16,17 @@ def main():
     # Init serial handler
     serial_handler = SerialHandler(baudrate=115200)
     
+    # Init hardware
+    hardware = HardwareController()
+    
     # Init game logic
-    logic = GameLogic(serial_handler, display)
+    logic = GameLogic(serial_handler, display, hardware)
     
     # Wire serial callback to logic.process_message
     serial_handler.start_listening(logic.process_message)
+    
+    # Setup hardware button from controller
+    hardware.set_button_callback(logic.hardware_button_pressed)
     
     # Setup physical buttons based on docs/pinout.md
     # Reset = GPIO 22 (Bell moved to ESP1)
@@ -35,7 +42,7 @@ def main():
     # Keep alive loop
     try:
         while True:
-            time.sleep(1)
+            time.sleep(0.1)
             logic.update()
     except KeyboardInterrupt:
         print("\nExiting...")
