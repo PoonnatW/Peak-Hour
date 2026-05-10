@@ -1,7 +1,47 @@
 UID,Ingredient
-A1B2C3D4,Potato
-B2C3D4E5,Tomato
-C3D4E5F6,Lettuce
-D4E5F6G7,Carrot
-E5F6G7H8,Beef Patty
-F6G7H8I9,Bun
+S1,Salmon
+S2,Salmon
+S3,Salmon
+S4,Salmon
+B1,Beef Steak
+B2,Beef Steak
+B3,Beef Steak
+B4,Beef Steak
+B5,Beef Steak
+C1,Chicken
+C2,Chicken
+C3,Chicken
+C4,Chicken
+F1,French Fries
+F2,French Fries
+F3,French Fries
+F4,French Fries
+O1,Onion Rings
+O2,Onion Rings
+O3,Onion Rings
+O4,Onion Rings
+T1,Tomato
+T2,Tomato
+T3,Tomato
+M1,Mushroom
+M2,Mushroom
+M3,Mushroom
+BR1,Broccoli
+BR2,Broccoli
+BR3,Broccoli
+IC_S1,Strawberry
+IC_S2,Strawberry
+IC_S3,Strawberry
+IC_S4,Strawberry
+IC_V1,Vanilla
+IC_V2,Vanilla
+IC_V3,Vanilla
+IC_V4,Vanilla
+IC_C1,Chocolate
+IC_C2,Chocolate
+IC_C3,Chocolate
+IC_C4,Chocolate
+IC_M1,Mint Chocolate Chip
+IC_M2,Mint Chocolate Chip
+IC_M3,Mint Chocolate Chip
+IC_M4,Mint Chocolate Chip
