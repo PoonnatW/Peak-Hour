@@ -1,2 +1,5 @@
 pyserial
 gpiozero
+adafruit-blinka
+adafruit-circuitpython-neopixel
+smbus2
