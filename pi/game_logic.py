@@ -243,6 +243,9 @@ class GameLogic:
         elif self.state in ["win", "lose"]:
             if elapsed > 5:
                 self.reset_pressed()
+                
+        # Update the graphical display
+        self.display.update(self.state, elapsed)
 
     def bell_pressed(self):
         self.change_state("checking")
