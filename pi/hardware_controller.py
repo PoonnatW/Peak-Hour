@@ -4,9 +4,9 @@ try:
     import neopixel
     import neopixel_spi
     import busio
-except ImportError:
-    print("One or more libraries (board, neopixel, neopixel_spi, busio) not found.")
-    print("Try: sudo pip3 install adafruit-blinka adafruit-circuitpython-neopixel-spi --break-system-packages")
+except ImportError as e:
+    print(f"❌ LIBRARY ERROR: {e}")
+    print("Try: sudo pip3 install adafruit-blinka adafruit-circuitpython-neopixel adafruit-circuitpython-neopixel-spi --break-system-packages")
     board = None
     neopixel = None
 
