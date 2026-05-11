@@ -16,19 +16,23 @@ class DisplayService:
         self.height = height
         
         # UI Selection: Modern Pi (DRM/KMS) or Desktop (X11/Wayland)
+        # For VNC support, we prioritize x11/wayland and ensure DISPLAY is set
+        if not os.environ.get('DISPLAY'):
+            os.environ['DISPLAY'] = ':0'
+            
         drivers = ['x11', 'wayland', 'kmsdrm', 'fbcon']
         success = False
         
         for driver in drivers:
             try:
-                if not os.environ.get('DISPLAY') and driver in ['x11', 'wayland']:
-                    continue
                 os.environ['SDL_VIDEODRIVER'] = driver
                 self.screen = pygame.display.set_mode((self.width, self.height), pygame.DOUBLEBUF | pygame.HWSURFACE)
                 print(f"[DISPLAY] Successfully initialized using {driver} driver.")
                 success = True
                 break
             except Exception as e:
+                # If x11/wayland failed, it might be because DISPLAY=:0 is wrong or no desktop is running
+                # We'll continue to the next driver (like kmsdrm which works without a desktop)
                 print(f"[DISPLAY] {driver} driver failed: {e}")
         
         if not success:
