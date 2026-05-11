@@ -204,7 +204,7 @@ class GameLogic:
             recipe = self.recipes_db[uid]
             self.active_recipe = recipe
             self.change_state("recipe_scanned")
-            self.display.show_recipe(recipe["name"], recipe["ingredients"])
+            self.display.show_recipe(recipe["name"], recipe["ingredients"], recipe_id=uid)
             
             # Clear all current doneness for a fresh start 
             self._reset_all_doneness()
@@ -330,10 +330,18 @@ class GameLogic:
                 else: all_pieces.append(content)
             
             # Map them for display
+            available_pieces = all_pieces[:]
             for ing_name in required:
                 if not ing_name.strip(): continue
-                # Find the piece for this ingredient
-                match = next((p for p in all_pieces if p.name == ing_name), None)
+                
+                # Find the piece for this ingredient, ensuring we don't reuse the same piece for duplicates
+                match = None
+                for p in available_pieces:
+                    if p.name == ing_name:
+                        match = p
+                        available_pieces.remove(p)
+                        break
+                
                 reqs = config.THRESHOLDS.get(ing_name, {})
                 
                 if match:

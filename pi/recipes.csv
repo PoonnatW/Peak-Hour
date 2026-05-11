@@ -1,3 +1,18 @@
 UID,DishName,Ingredients
-0000,Test Burger,Beef Steak|Tomato|Mushroom
-0001,Chicken & Fries,Chicken|French Fries|Broccoli
+0,Test Burger,Beef Steak|Tomato|Mushroom
+1,Recipe 1,Broccoli|Tomato|Onion Rings|French Fries|Beef Steak|Chicken|Salmon|Chocolate|Mint Chocolate Chip|Strawberry
+2,Recipe 2,Salmon|Salmon|Chicken|French Fries|French Fries|Mushroom|Tomato|Chocolate|Strawberry|Mint Chocolate Chip
+3,Recipe 3,Beef Steak|Beef Steak|Salmon|Chicken|Onion Rings|Tomato|Broccoli|Chocolate|Vanilla|Strawberry
+4,Recipe 4,Beef Steak|Salmon|Salmon|Onion Rings|Mushroom|Broccoli|Tomato|Chocolate|Strawberry|Strawberry
+5,Recipe 5,Beef Steak|Beef Steak|Beef Steak|French Fries|Onion Rings|Tomato|Tomato|Strawberry|Chocolate|Strawberry
+6,Recipe 6,Beef Steak|Chicken|Chicken|Onion Rings|Onion Rings|Mushroom|Broccoli|Strawberry|Strawberry|Mint Chocolate Chip
+7,Recipe 7,Beef Steak|Beef Steak|Salmon|French Fries|French Fries|Onion Rings|Onion Rings|Vanilla|Chocolate|Chocolate
+8,Recipe 8,Salmon|Salmon|Salmon|French Fries|Mushroom|Chocolate|Mint Chocolate Chip|Strawberry
+9,Recipe 9,Beef Steak|Beef Steak|Salmon|Onion Rings|Onion Rings|Mushroom|Broccoli|Strawberry|Vanilla|Chocolate
+10,Recipe 10,Beef Steak|Chicken|Salmon|French Fries|Onion Rings|Tomato|Broccoli|Strawberry|Chocolate|Mint Chocolate Chip
+11,Recipe 11,Chicken|Chicken|Salmon|French Fries|French Fries|Beef Steak|Broccoli|Strawberry|Vanilla|Chocolate
+12,Recipe 12,Beef Steak|Beef Steak|French Fries|French Fries|Salmon|Chicken|Broccoli|Chocolate|Vanilla|Strawberry
+13,Recipe 13,Chicken|Chicken|Mushroom|Mushroom|Onion Rings|Onion Rings|Beef Steak|Strawberry|Vanilla|Chocolate
+14,Recipe 14,Beef Steak|Beef Steak|French Fries|French Fries|Onion Rings|Tomato|Tomato|Strawberry|Strawberry|Mint Chocolate Chip
+15,Recipe 15,Beef Steak|Chicken|Salmon|Onion Rings|Tomato|Broccoli|Broccoli|Vanilla|Strawberry|Chocolate
+16,Recipe 16,Beef Steak|Chicken|Chicken|Onion Rings|Onion Rings|Broccoli|Mushroom|Strawberry|Vanilla|Chocolate

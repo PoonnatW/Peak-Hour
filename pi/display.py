@@ -74,6 +74,7 @@ class DisplayService:
         self.load_assets()
         
         self.current_recipe = "None"
+        self.current_recipe_id = "None"
         self.ingredients = []
         self.start_time = time.time()
         
@@ -85,7 +86,11 @@ class DisplayService:
                     name = os.path.splitext(file)[0]
                     try:
                         img = pygame.image.load(os.path.join(asset_dir, file)).convert_alpha()
-                        img = pygame.transform.smoothscale(img, (140, 140))
+                        if "Recipe_Card" in name:
+                            # Scale card to fit screen nicely
+                            img = pygame.transform.smoothscale(img, (600, 360))
+                        else:
+                            img = pygame.transform.smoothscale(img, (140, 140))
                         self.assets[name] = img
                     except Exception as e:
                         print(f"[DISPLAY] Failed to load {file}: {e}")
@@ -140,16 +145,22 @@ class DisplayService:
         self.render_text("NEW ORDER RECEIVED", 60, size="sub", color=self.CLR_TEXT_DIM)
         self.render_text(self.current_recipe.upper(), 100, size="main", color=self.CLR_TEXT)
         
-        # Ingredient Cards
-        for i, ing in enumerate(self.ingredients):
-            x = 100 + (i % 4) * 180
-            y = 160 + (i // 4) * 180
-            card_rect = pygame.Rect(x - 70, y - 10, 140, 140)
-            self.draw_glass_panel(card_rect, self.CLR_PANEL)
-            
-            if ing in self.assets:
-                self.screen.blit(self.assets[ing], (x - 70, y - 20))
-            self.render_text(ing, y + 140, x, size="sub", color=self.CLR_ACCENT)
+        # If we have a dedicated recipe card image, show it
+        card_asset_name = f"Recipe_Card_{int(self.current_recipe_id)}" if self.current_recipe_id.isdigit() else ""
+        if card_asset_name in self.assets:
+            img = self.assets[card_asset_name]
+            self.screen.blit(img, (self.width // 2 - 300, 130))
+        else:
+            # Ingredient Cards fallback
+            for i, ing in enumerate(self.ingredients):
+                x = 100 + (i % 4) * 180
+                y = 160 + (i // 4) * 180
+                card_rect = pygame.Rect(x - 70, y - 10, 140, 140)
+                self.draw_glass_panel(card_rect, self.CLR_PANEL)
+                
+                if ing in self.assets:
+                    self.screen.blit(self.assets[ing], (x - 70, y - 20))
+                self.render_text(ing, y + 140, x, size="sub", color=self.CLR_ACCENT)
 
     def draw_countdown(self, elapsed):
         count = 3 - int(elapsed)
@@ -220,9 +231,10 @@ class DisplayService:
         rect = surf.get_rect(center=(x, y))
         self.screen.blit(surf, rect)
 
-    def show_recipe(self, recipe_name, required_ingredients):
+    def show_recipe(self, recipe_name, required_ingredients, recipe_id="None"):
         self.current_recipe = recipe_name
         self.ingredients = required_ingredients
+        self.current_recipe_id = str(recipe_id)
 
     def show_error(self, message):
         print(f"[DISPLAY] ERROR: {message}")
