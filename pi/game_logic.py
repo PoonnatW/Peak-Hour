@@ -355,8 +355,10 @@ class GameLogic:
                 self.change_state("showcase")
                 # display showcase implementation is pending art team
         elif self.state == "showcase":
-            # Now waits for manual Lid Button press to proceed to countdown
-            pass
+            if elapsed > 4:
+                print("[LOGIC] Showcase timeout - Auto-starting countdown...")
+                self.change_state("countdown")
+                self.display.play_sound("countdown")
         elif self.state == "countdown":
             if elapsed > 3:
                 self.change_state("playing")
