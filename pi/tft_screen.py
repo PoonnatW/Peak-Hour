@@ -16,9 +16,6 @@ def setup_tft():
     """
     print("[TFT] Initializing ILI9488 on SPI0...")
     try:
-        from luma.core.lib.gpiozero import gpiozero
-        gpio_backend = gpiozero()
-        
         # port=0, device=0 automatically binds CS to GPIO 8
         serial_iface = spi(
             port=0, 
@@ -28,8 +25,7 @@ def setup_tft():
             gpio_CS=8,
             gpio_DC=22, 
             gpio_RST=27, 
-            bus_speed_hz=8000000,
-            gpio=gpio_backend
+            bus_speed_hz=8000000
         )
         
         # Setup the ILI9488 device
