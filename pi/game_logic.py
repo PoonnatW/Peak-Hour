@@ -359,6 +359,5 @@ class GameLogic:
              return
              
         # All good!
-        self.display.show_win()
         self.display.play_sound("win")
         self.change_state("win")
