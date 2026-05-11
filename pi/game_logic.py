@@ -256,10 +256,19 @@ class GameLogic:
         print(f"[LOGIC] State changed to: {new_state}")
 
     def hardware_button_pressed(self):
-        # Base Button (GPIO 6) -> Progress all food in deep fryers
-        for station in ["Deep Fryer 1", "Deep Fryer 2"]:
-            if station in self.station_contents:
-                self._handle_operation(station, "presses")
+        # Base Button (GPIO 6) -> Deep Fryer
+        print(f"[DEBUG] Base Button (Fries) Pressed! State: {self.state}")
+        
+        # Check if anyone is actually at the fryer
+        fryer1 = self.station_contents.get("Deep Fryer 1")
+        fryer2 = self.station_contents.get("Deep Fryer 2")
+        
+        if not fryer1 and not fryer2:
+            print("[LOGIC] Fries Button ignored: No ingredient detected at Deep Fryer stations.")
+            return
+
+        self._handle_operation("Deep Fryer 1", "presses")
+        self._handle_operation("Deep Fryer 2", "presses")
 
     def lid_button_pressed(self):
         # Lid Button (GPIO 5) -> Confirm Order / Start Countdown
