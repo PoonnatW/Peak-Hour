@@ -1,61 +1,81 @@
 import pygame
 import os
 import time
+import math
 
 class DisplayService:
-    def __init__(self, width=480, height=320):
+    def __init__(self, width=800, height=480):
         # Initialize Pygame and Mixer
         pygame.init()
         try:
             pygame.mixer.init()
         except:
-            print("[AUDIO] Warning: Could not initialize mixer. Audio will be disabled.")
+            print("[AUDIO] Warning: Could not initialize mixer.")
             
         self.width = width
         self.height = height
         
-        # Try to use framebuffer if on Pi, otherwise normal window
-        # For 3.5" TFTs, you may need to set: export SDL_FBDEV=/dev/fb1
-        try:
-            # Check if we are running in a terminal without X11
-            if not os.environ.get('DISPLAY'):
-                os.environ['SDL_VIDEODRIVER'] = 'fbcon'
-            self.screen = pygame.display.set_mode((self.width, self.height), pygame.FULLSCREEN)
-        except:
-            print("[DISPLAY] Falling back to windowed mode.")
+        # UI Selection: Modern Pi (DRM/KMS) or Desktop (X11/Wayland)
+        drivers = ['x11', 'wayland', 'kmsdrm', 'fbcon']
+        success = False
+        
+        for driver in drivers:
+            try:
+                if not os.environ.get('DISPLAY') and driver in ['x11', 'wayland']:
+                    continue
+                os.environ['SDL_VIDEODRIVER'] = driver
+                self.screen = pygame.display.set_mode((self.width, self.height), pygame.DOUBLEBUF | pygame.HWSURFACE)
+                print(f"[DISPLAY] Successfully initialized using {driver} driver.")
+                success = True
+                break
+            except Exception as e:
+                print(f"[DISPLAY] {driver} driver failed: {e}")
+        
+        if not success:
+            print("[DISPLAY] All drivers failed. Attempting final emergency fallback...")
+            if 'SDL_VIDEODRIVER' in os.environ: del os.environ['SDL_VIDEODRIVER']
+            # Try a smaller resolution for fallback
+            self.width, self.height = 640, 480
             self.screen = pygame.display.set_mode((self.width, self.height))
             
-        pygame.display.set_caption("Peak Hour Game")
+        pygame.display.set_caption("PEAK HOUR | EXECUTIVE CHEF")
         
-        # UI Colors
-        self.COLOR_WHITE = (250, 250, 250)
-        self.COLOR_BLACK = (20, 20, 20)
-        self.COLOR_ACCENT = (0, 150, 255)
-        self.COLOR_RED = (220, 50, 50)
-        self.COLOR_GREEN = (50, 200, 100)
+        # --- PREMIUM DESIGN TOKENS ---
+        self.CLR_BG = (12, 12, 12)          # Deep Space Black
+        self.CLR_PANEL = (25, 25, 28)       # Dark Slate
+        self.CLR_ACCENT = (0, 229, 255)     # Electric Cyan
+        self.CLR_SUCCESS = (0, 230, 118)    # Vibrant Green
+        self.CLR_DANGER = (255, 23, 68)     # Hot Pink/Red
+        self.CLR_TEXT = (245, 245, 245)
+        self.CLR_TEXT_DIM = (140, 140, 140)
         
-        # Debug Button Rects
-        self.debug_btn_rect = pygame.Rect(self.width // 2 - 80, self.height - 60, 160, 40)
-        self.btn_spin = pygame.Rect(10, self.height - 90, 100, 40)
-        self.btn_toss = pygame.Rect(120, self.height - 90, 100, 40)
-        self.btn_press = pygame.Rect(230, self.height - 90, 100, 40)
-        self.btn_bell = pygame.Rect(340, self.height - 90, 130, 40)
+        # Debug Button Rects (Repositioned for 800x480)
+        btn_y = self.height - 70
+        btn_w, btn_h = 160, 45
+        self.debug_btn_rect = pygame.Rect(self.width // 2 - 80, self.height - 130, 160, 40)
+        self.btn_spin = pygame.Rect(30, btn_y, btn_w, btn_h)
+        self.btn_toss = pygame.Rect(220, btn_y, btn_w, btn_h)
+        self.btn_press = pygame.Rect(410, btn_y, btn_w, btn_h)
+        self.btn_bell = pygame.Rect(600, btn_y, btn_w + 10, btn_h)
         
         # Fonts
         try:
-            self.font_title = pygame.font.SysFont("Arial", 42, bold=True)
-            self.font_main = pygame.font.SysFont("Arial", 30, bold=True)
-            self.font_sub = pygame.font.SysFont("Arial", 20)
+            self.font_title = pygame.font.SysFont("Arial", 72, bold=True)
+            self.font_main = pygame.font.SysFont("Arial", 36, bold=True)
+            self.font_sub = pygame.font.SysFont("Arial", 22)
+            self.font_timer = pygame.font.SysFont("monospace", 90, bold=True)
         except:
-            self.font_title = pygame.font.Font(None, 50)
-            self.font_main = pygame.font.Font(None, 36)
+            self.font_title = pygame.font.Font(None, 80)
+            self.font_main = pygame.font.Font(None, 40)
             self.font_sub = pygame.font.Font(None, 24)
+            self.font_timer = pygame.font.Font(None, 100)
             
         self.assets = {}
         self.load_assets()
         
         self.current_recipe = "None"
         self.ingredients = []
+        self.start_time = time.time()
         
     def load_assets(self):
         asset_dir = os.path.join(os.path.dirname(__file__), "assets")
@@ -65,18 +85,31 @@ class DisplayService:
                     name = os.path.splitext(file)[0]
                     try:
                         img = pygame.image.load(os.path.join(asset_dir, file)).convert_alpha()
-                        # Standardize ingredient size
-                        img = pygame.transform.smoothscale(img, (100, 100))
+                        img = pygame.transform.smoothscale(img, (140, 140))
                         self.assets[name] = img
                     except Exception as e:
                         print(f"[DISPLAY] Failed to load {file}: {e}")
 
+    def draw_glass_panel(self, rect, color, border_color=None, alpha=180):
+        s = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+        pygame.draw.rect(s, (*color, alpha), (0, 0, rect.width, rect.height), border_radius=15)
+        if border_color:
+            pygame.draw.rect(s, border_color, (0, 0, rect.width, rect.height), width=2, border_radius=15)
+        self.screen.blit(s, (rect.x, rect.y))
+
     def update(self, state, elapsed):
-        # Keep window events processing
         pygame.event.pump()
         
-        # Background
-        self.screen.fill(self.COLOR_WHITE)
+        # Animated Background
+        t = time.time()
+        pulse = (math.sin(t * 2) + 1) * 5
+        self.screen.fill((10 + pulse, 10, 15))
+        
+        # Subtle Grid
+        for x in range(0, self.width, 40):
+            pygame.draw.line(self.screen, (20, 20, 25), (x, 0), (x, self.height))
+        for y in range(0, self.height, 40):
+            pygame.draw.line(self.screen, (20, 20, 25), (0, y), (self.width, y))
         
         if state == "idle":
             self.draw_idle()
@@ -89,103 +122,93 @@ class DisplayService:
         elif state == "checking":
             self.draw_checking()
         elif state == "win":
-            self.draw_result("SUCCESS!", self.COLOR_GREEN)
+            self.draw_result("SHIFT COMPLETE", self.CLR_SUCCESS)
         elif state == "lose":
-            self.draw_result("FAILED", self.COLOR_RED)
+            self.draw_result("RESTAURANT CLOSED", self.CLR_DANGER)
             
         pygame.display.flip()
 
     def draw_idle(self):
-        # Draw a subtle pulsing background or logo here
-        self.render_text("PEAK HOUR", self.height // 2 - 30, size="title", color=self.COLOR_BLACK)
-        self.render_text("Scan Recipe Card to Start", self.height // 2 + 30, size="main", color=self.COLOR_ACCENT)
+        self.render_text("PEAK HOUR", self.height // 2 - 40, size="title", color=self.CLR_ACCENT)
+        # Pulsing subtitle
+        alpha = int(155 + 100 * math.sin(time.time() * 4))
+        self.render_text("SCAN RECIPE CARD TO START", self.height // 2 + 50, size="main", color=(alpha, alpha, alpha))
         
-        # Draw Debug Button
-        pygame.draw.rect(self.screen, self.COLOR_BLACK, self.debug_btn_rect, border_radius=10)
-        self.render_text("DEBUG START", self.debug_btn_rect.centery, x=self.debug_btn_rect.centerx, size="sub", color=self.COLOR_WHITE)
+        # Debug Start
+        self.draw_glass_panel(self.debug_btn_rect, self.CLR_PANEL, self.CLR_ACCENT)
+        self.render_text("DEBUG START", self.debug_btn_rect.centery, x=self.debug_btn_rect.centerx, size="sub", color=self.CLR_ACCENT)
 
     def draw_showcase(self):
-        self.render_text("ORDER UP!", 35, size="title", color=self.COLOR_BLACK)
-        self.render_text(self.current_recipe, 75, size="main", color=self.COLOR_ACCENT)
+        # Header Panel
+        header_rect = pygame.Rect(50, 30, self.width - 100, 100)
+        self.draw_glass_panel(header_rect, self.CLR_PANEL, self.CLR_ACCENT)
+        self.render_text("NEW ORDER RECEIVED", 60, size="sub", color=self.CLR_TEXT_DIM)
+        self.render_text(self.current_recipe.upper(), 100, size="main", color=self.CLR_TEXT)
         
-        # Display ingredients in a grid
+        # Ingredient Cards
         for i, ing in enumerate(self.ingredients):
-            x = 80 + (i % 4) * 110
-            y = 120 + (i // 4) * 120
+            x = 100 + (i % 4) * 180
+            y = 160 + (i // 4) * 180
+            card_rect = pygame.Rect(x - 70, y - 10, 140, 140)
+            self.draw_glass_panel(card_rect, self.CLR_PANEL)
+            
             if ing in self.assets:
-                self.screen.blit(self.assets[ing], (x - 50, y - 50))
-            self.render_text(ing, y + 60, x, size="sub", color=self.COLOR_BLACK)
+                self.screen.blit(self.assets[ing], (x - 70, y - 20))
+            self.render_text(ing, y + 140, x, size="sub", color=self.CLR_ACCENT)
 
     def draw_countdown(self, elapsed):
         count = 3 - int(elapsed)
         if count > 0:
-            # Pulsing effect
-            pulse = 1.0 + 0.2 * (elapsed % 1.0)
-            size = int(100 * pulse)
-            font = pygame.font.SysFont("Arial", size, bold=True)
-            self.render_text(str(count), self.height // 2, font=font, color=self.COLOR_RED)
+            scale = 1.0 + (elapsed % 1.0)
+            self.render_text(str(count), self.height // 2, size="title", color=self.CLR_DANGER)
         else:
-            self.render_text("START!", self.height // 2, size="title", color=self.COLOR_GREEN)
+            self.render_text("COOK!", self.height // 2, size="title", color=self.CLR_SUCCESS)
 
     def draw_game(self, elapsed):
-        remaining = 480 - elapsed
-        if remaining < 0: remaining = 0
+        remaining = max(0, 480 - elapsed)
+        minutes, seconds = int(remaining // 60), int(remaining % 60)
         
-        minutes = int(remaining // 60)
-        seconds = int(remaining % 60)
-        
-        # Background gets redder as time runs out
-        danger = 1.0 - (remaining / 480)
-        bg_color = (255, 255 - int(100 * danger), 255 - int(100 * danger))
-        self.screen.fill(bg_color)
-        
-        # Timer
+        # Large Timer Center
         time_str = f"{minutes:02d}:{seconds:02d}"
-        color = self.COLOR_RED if remaining < 60 else self.COLOR_BLACK
-        self.render_text(time_str, self.height // 2, size="title", color=color)
+        t_color = self.CLR_DANGER if remaining < 60 else self.CLR_TEXT
+        self.render_text(time_str, self.height // 2, size="timer", color=t_color)
         
-        # Show mini ingredient icons at the top
-        icon_size = 50
+        # Mini Inventory (Top)
+        inv_rect = pygame.Rect(20, 20, self.width - 40, 80)
+        self.draw_glass_panel(inv_rect, self.CLR_PANEL, alpha=100)
         for i, ing in enumerate(self.ingredients):
-            x = 30 + i * (icon_size + 10)
-            y = 10
             if ing in self.assets:
-                # Draw small version of asset
-                small_img = pygame.transform.smoothscale(self.assets[ing], (icon_size, icon_size))
-                self.screen.blit(small_img, (x, y))
-            else:
-                # Draw placeholder text if image missing
-                self.render_text(ing[:3], y + icon_size//2, x + icon_size//2, size="sub")
-        
-        # Active recipe at bottom
-        pygame.draw.rect(self.screen, self.COLOR_BLACK, (0, self.height - 40, self.width, 40))
-        self.render_text(f"Recipe: {self.current_recipe}", self.height - 20, color=self.COLOR_WHITE, size="sub")
-        
-        # Debug Action Buttons
-        self.draw_debug_action(self.btn_spin, "SPIN (S)", self.COLOR_ACCENT)
-        self.draw_debug_action(self.btn_toss, "TOSS (T)", (255, 165, 0))
-        self.draw_debug_action(self.btn_press, "PRESS (P)", self.COLOR_RED)
-        self.draw_debug_action(self.btn_bell, "RING BELL (B)", self.COLOR_GREEN)
+                small = pygame.transform.smoothscale(self.assets[ing], (60, 60))
+                self.screen.blit(small, (40 + i * 75, 30))
 
-    def draw_debug_action(self, rect, text, color):
-        pygame.draw.rect(self.screen, color, rect, border_radius=5)
-        self.render_text(text, rect.centery, x=rect.centerx, size="sub", color=self.COLOR_WHITE)
+        # Bottom Bar
+        bar_rect = pygame.Rect(0, self.height - 100, self.width, 100)
+        self.draw_glass_panel(bar_rect, self.CLR_BG, alpha=200)
+        self.render_text(f"CURRENT TASK: {self.current_recipe}", self.height - 115, size="sub", color=self.CLR_ACCENT)
+
+        # Action Labels (Debug)
+        self.draw_action(self.btn_spin, "SPIN [S]", self.CLR_ACCENT)
+        self.draw_action(self.btn_toss, "TOSS [T]", (255, 165, 0))
+        self.draw_action(self.btn_press, "PRESS [P]", self.CLR_DANGER)
+        self.draw_action(self.btn_bell, "SERVICE! [B]", self.CLR_SUCCESS)
+
+    def draw_action(self, rect, text, color):
+        self.draw_glass_panel(rect, self.CLR_PANEL, color, alpha=255)
+        self.render_text(text, rect.centery, x=rect.centerx, size="sub", color=self.CLR_TEXT)
 
     def draw_checking(self):
-        self.screen.fill(self.COLOR_ACCENT)
-        self.render_text("CHECKING...", self.height // 2, size="title", color=self.COLOR_WHITE)
+        self.screen.fill(self.CLR_PANEL)
+        self.render_text("VERIFYING INGREDIENTS...", self.height // 2, size="main", color=self.CLR_ACCENT)
 
     def draw_result(self, text, color):
-        self.screen.fill(color)
-        self.render_text(text, self.height // 2, size="title", color=self.COLOR_WHITE)
+        self.screen.fill(self.CLR_BG)
+        # Shadow effect
+        self.render_text(text, self.height // 2 + 4, size="title", color=(20, 20, 20))
+        self.render_text(text, self.height // 2, size="title", color=color)
 
-    def render_text(self, text, y, x=None, size="main", color=(0, 0, 0), font=None):
+    def render_text(self, text, y, x=None, size="main", color=(255, 255, 255)):
         if x is None: x = self.width // 2
-        if font is None:
-            if size == "title": font = self.font_title
-            elif size == "sub": font = self.font_sub
-            else: font = self.font_main
-            
+        font = self.font_title if size == "title" else self.font_timer if size == "timer" else self.font_sub if size == "sub" else self.font_main
         surf = font.render(text, True, color)
         rect = surf.get_rect(center=(x, y))
         self.screen.blit(surf, rect)
@@ -194,31 +217,13 @@ class DisplayService:
         self.current_recipe = recipe_name
         self.ingredients = required_ingredients
 
-    def show_win(self):
-        pass
-
     def show_error(self, message):
         print(f"[DISPLAY] ERROR: {message}")
 
     def play_sound(self, sound_type):
-        # We handle sound types as per workplan
-        sound_files = {
-            "countdown": "countdown.wav",
-            "alarm": "alarm.wav",
-            "bell": "bell.ding.wav",
-            "win": "correct.wav",
-            "error": "wrong.wav"
-        }
-        
+        sound_files = {"countdown": "countdown.wav", "alarm": "alarm.wav", "bell": "bell.ding.wav", "win": "correct.wav", "error": "wrong.wav"}
         if sound_type in sound_files:
             path = os.path.join(os.path.dirname(__file__), "assets", sound_files[sound_type])
             if os.path.exists(path):
-                try:
-                    pygame.mixer.Sound(path).play()
-                except:
-                    pass
-            else:
-                print(f"[AUDIO] Sound file not found: {path}")
-
-    def show_win(self):
-        pass
+                try: pygame.mixer.Sound(path).play()
+                except: pass
