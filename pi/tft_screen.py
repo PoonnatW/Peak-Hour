@@ -20,6 +20,9 @@ def setup_tft():
         serial_iface = spi(
             port=0, 
             device=0, 
+            gpio_SCLK=11,
+            gpio_MOSI=10,
+            gpio_CS=8,
             gpio_DC=22, 
             gpio_RST=27, 
             bus_speed_hz=24000000
