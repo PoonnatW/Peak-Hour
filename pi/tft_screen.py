@@ -40,3 +40,40 @@ def setup_tft():
 def get_default_font():
     """Returns the default PIL font."""
     return ImageFont.load_default()
+
+def draw_game_state(device, logic):
+    """Draws the current game state to the TFT screen."""
+    if not device: return
+    
+    with canvas(device) as draw:
+        font = get_default_font()
+        
+        # Background
+        draw.rectangle(device.bounding_box, outline="white", fill="black")
+        
+        # State
+        state_text = f"STATE: {logic.state.upper()}"
+        draw.text((10, 10), state_text, fill="yellow", font=font)
+        
+        if logic.state == "playing":
+            # Timer
+            time_left = max(0, logic.time_left)
+            mins = int(time_left // 60)
+            secs = int(time_left % 60)
+            time_text = f"TIME: {mins:02d}:{secs:02d}"
+            draw.text((10, 40), time_text, fill="cyan", font=font)
+            
+            # Recipe
+            recipe = logic.current_recipe
+            if recipe:
+                draw.text((10, 70), f"ORDER: {recipe['name']}", fill="white", font=font)
+                
+            # Completed ingredients
+            ready_count = sum(1 for i in logic.ingredients if i.get("state") == "plated")
+            total_count = len(logic.ingredients)
+            draw.text((10, 100), f"PLATED: {ready_count}/{total_count}", fill="green", font=font)
+            
+        elif logic.state == "win":
+            draw.text((10, 40), "YOU WIN!", fill="green", font=font)
+        elif logic.state == "lose":
+            draw.text((10, 40), "GAME OVER", fill="red", font=font)

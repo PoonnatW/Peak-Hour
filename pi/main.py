@@ -7,11 +7,13 @@ from serial_handler import SerialHandler
 from game_logic import GameLogic
 from display import DisplayService
 from hardware_controller import HardwareController
+from tft_screen import setup_tft, draw_game_state
 
 def main():
     print("Starting Peak Hour Game Controller...")
     
     display = DisplayService()
+    tft_device = setup_tft()
     
     # Init serial handler
     serial_handler = SerialHandler(baudrate=115200)
@@ -39,6 +41,7 @@ def main():
     # Keep alive loop
     try:
         import pygame
+        last_tft_update = time.time()
         while True:
             # Handle Pygame Events (Mouse clicks for debugging)
             for event in pygame.event.get():
@@ -83,6 +86,14 @@ def main():
                     sys.exit()
 
             logic.update()
+            
+            # Update TFT Screen periodically (5 FPS to avoid lagging the game loop)
+            current_time = time.time()
+            if current_time - last_tft_update > 0.2:
+                if tft_device:
+                    draw_game_state(tft_device, logic)
+                last_tft_update = current_time
+                
             time.sleep(0.05)
     except KeyboardInterrupt:
         print("\nExiting...")
