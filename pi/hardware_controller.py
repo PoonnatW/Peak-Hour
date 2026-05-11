@@ -132,15 +132,24 @@ class HardwareController:
 if __name__ == "__main__":
     # Simple test script
     print("Testing Hardware Controller...")
+    print("--------------------------------")
     hw = HardwareController()
-    hw.set_button_callback(lambda: print("Callback Triggered!"))
+    hw.set_button_callbacks(
+        base_cb=lambda: print("[EVENT] Base Button (GPIO 6) Pressed!"),
+        lid_cb=lambda: print("[EVENT] Lid Button (GPIO 5) Pressed!")
+    )
+
+    if hw.bus is None:
+        print("WARNING: AS5600 not connected. Check I2C settings and reboot.")
 
     try:
+        print("Polling sensors... (Press Ctrl+C to stop)")
         while True:
             hw.update()
             angle = hw.read_as5600_angle()
             if angle is not None:
-                print(f"AS5600 Angle: {angle} | Spins: {hw.spins}")
-            time.sleep(0.1)
+                print(f"Angle: {angle:4d} | Spins: {hw.spins} | Cum: {int(hw.cumulative_angle):5d}", end="\r")
+            time.sleep(0.05)
     except KeyboardInterrupt:
+        print("\nTest stopped.")
         hw.clear_leds()
