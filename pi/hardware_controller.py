@@ -48,8 +48,9 @@ class HardwareController:
         self.lid_callback = None
         if Button:
             try:
-                self.base_btn = Button(6, pull_up=True, bounce_time=0.1)
-                self.lid_btn = Button(5, pull_up=True, bounce_time=0.1)
+                # Increase bounce_time to 0.2s to prevent "ghost" presses
+                self.base_btn = Button(6, pull_up=True, bounce_time=0.2)
+                self.lid_btn = Button(5, pull_up=True, bounce_time=0.2)
                 self.base_btn.when_pressed = self._base_handler
                 self.lid_btn.when_pressed = self._lid_handler
                 print("Buttons initialized: Base (GPIO 6), Lid (GPIO 5)")
