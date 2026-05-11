@@ -34,8 +34,12 @@ class DisplayService:
         self.COLOR_RED = (220, 50, 50)
         self.COLOR_GREEN = (50, 200, 100)
         
-        # Debug Button Rect
+        # Debug Button Rects
         self.debug_btn_rect = pygame.Rect(self.width // 2 - 80, self.height - 60, 160, 40)
+        self.btn_spin = pygame.Rect(10, self.height - 90, 100, 40)
+        self.btn_toss = pygame.Rect(120, self.height - 90, 100, 40)
+        self.btn_press = pygame.Rect(230, self.height - 90, 100, 40)
+        self.btn_bell = pygame.Rect(340, self.height - 90, 130, 40)
         
         # Fonts
         try:
@@ -143,6 +147,16 @@ class DisplayService:
         # Active recipe at bottom
         pygame.draw.rect(self.screen, self.COLOR_BLACK, (0, self.height - 40, self.width, 40))
         self.render_text(f"Recipe: {self.current_recipe}", self.height - 20, color=self.COLOR_WHITE, size="sub")
+        
+        # Debug Action Buttons
+        self.draw_debug_action(self.btn_spin, "SPIN (S)", self.COLOR_ACCENT)
+        self.draw_debug_action(self.btn_toss, "TOSS (T)", (255, 165, 0))
+        self.draw_debug_action(self.btn_press, "PRESS (P)", self.COLOR_RED)
+        self.draw_debug_action(self.btn_bell, "RING BELL (B)", self.COLOR_GREEN)
+
+    def draw_debug_action(self, rect, text, color):
+        pygame.draw.rect(self.screen, color, rect, border_radius=5)
+        self.render_text(text, rect.centery, x=rect.centerx, size="sub", color=self.COLOR_WHITE)
 
     def draw_checking(self):
         self.screen.fill(self.COLOR_ACCENT)
