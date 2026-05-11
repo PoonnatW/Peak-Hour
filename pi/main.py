@@ -50,10 +50,24 @@ def main():
                     if logic.state == "idle":
                         if display.debug_btn_rect.collidepoint(pos):
                             print("[DEBUG] Manual Start Clicked")
-                            logic.process_message("RCPE", "0", "0000") # Start the test recipe
+                            logic.process_message("RCPE", "0", "0000")
                     elif logic.state == "playing":
-                        # Click to ring the bell
-                        logic.process_message("BELL", "0", "1")
+                        if display.btn_spin.collidepoint(pos):
+                            logic.process_message("SPIN", "1", "1")
+                        elif display.btn_toss.collidepoint(pos):
+                            logic.process_message("TOSS", "1", "1")
+                        elif display.btn_press.collidepoint(pos):
+                            logic.process_message("BTN", "1", "1")
+                        elif display.btn_bell.collidepoint(pos):
+                            logic.process_message("BELL", "0", "1")
+                
+                # Keyboard shortcuts for quick debugging
+                if event.type == pygame.KEYDOWN:
+                    if logic.state == "playing":
+                        if event.key == pygame.K_s: logic.process_message("SPIN", "1", "1")
+                        elif event.key == pygame.K_t: logic.process_message("TOSS", "1", "1")
+                        elif event.key == pygame.K_p: logic.process_message("BTN", "1", "1")
+                        elif event.key == pygame.K_b: logic.process_message("BELL", "0", "1")
                 
                 if event.type == pygame.QUIT:
                     sys.exit()
