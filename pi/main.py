@@ -105,6 +105,8 @@ def main():
         print("\nExiting...")
     finally:
         serial_handler.stop()
+        if tft_device:
+            tft_device.cleanup()
         print("Shutdown complete.")
 
 if __name__ == "__main__":
