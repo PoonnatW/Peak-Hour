@@ -37,10 +37,15 @@ class GpiozeroLumaWrapper:
             else:
                 self.pins[pin].off()
 
-    def cleanup(self):
-        for pin, device in self.pins.items():
-            device.close()
-        self.pins.clear()
+    def cleanup(self, pin=None):
+        if pin is not None:
+            if pin in self.pins:
+                self.pins[pin].close()
+                del self.pins[pin]
+        else:
+            for p, device in self.pins.items():
+                device.close()
+            self.pins.clear()
 
 def setup_tft():
     """
@@ -93,20 +98,25 @@ def draw_game_state(device, logic):
         
         if logic.state == "playing":
             # Timer
-            time_left = max(0, logic.time_left)
-            mins = int(time_left // 60)
-            secs = int(time_left % 60)
-            time_text = f"TIME: {mins:02d}:{secs:02d}"
-            draw.text((10, 40), time_text, fill="cyan", font=font)
+            recipe = logic.active_recipe
             
-            # Recipe
-            recipe = logic.current_recipe
             if recipe:
+                import time
+                time_limit = int(recipe.get("time_limit", 180))
+                elapsed = time.time() - logic.state_time
+                time_left = max(0, time_limit - elapsed)
+                
+                mins = int(time_left // 60)
+                secs = int(time_left % 60)
+                time_text = f"TIME: {mins:02d}:{secs:02d}"
+                draw.text((10, 40), time_text, fill="cyan", font=font)
+                
+                # Recipe
                 draw.text((10, 70), f"ORDER: {recipe['name']}", fill="white", font=font)
                 
             # Completed ingredients
-            ready_count = sum(1 for i in logic.ingredients if i.get("state") == "plated")
-            total_count = len(logic.ingredients)
+            ready_count = sum(1 for p in logic.station_contents.values() if p.state == "plated")
+            total_count = len(recipe['ingredients']) if recipe else 0
             draw.text((10, 100), f"PLATED: {ready_count}/{total_count}", fill="green", font=font)
             
         elif logic.state == "win":
