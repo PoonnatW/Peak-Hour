@@ -22,14 +22,14 @@ ICE_CREAM_MAX = 3000
 # Required counts per ingredient for generic operations
 THRESHOLDS = {
     # Frying pan (tosses)
-    "Salmon":       {"spins": 0, "tosses": 4, "presses": 0},
-    "Beef Steak":   {"spins": 0, "tosses": 6, "presses": 0},
-    "Chicken":      {"spins": 0, "tosses": 8, "presses": 0},
+    "Salmon":       {"spins": 0, "tosses": 2, "presses": 0},
+    "Beef Steak":   {"spins": 0, "tosses": 2, "presses": 0},
+    "Chicken":      {"spins": 0, "tosses": 2, "presses": 0},
     # Deep fryer (presses)
-    "French Fries": {"spins": 0, "tosses": 0, "presses": 16},
-    "Onion Rings":  {"spins": 0, "tosses": 0, "presses": 8},
+    "French Fries": {"spins": 0, "tosses": 0, "presses": 3},
+    "Onion Rings":  {"spins": 0, "tosses": 0, "presses": 3},
     # Vegetable washer (spins)
     "Tomato":       {"spins": 3, "tosses": 0, "presses": 0},
-    "Mushroom":     {"spins": 6, "tosses": 0, "presses": 0},
-    "Broccoli":     {"spins": 9, "tosses": 0, "presses": 0},
+    "Mushroom":     {"spins": 3, "tosses": 0, "presses": 0},
+    "Broccoli":     {"spins": 3, "tosses": 0, "presses": 0},
 }

@@ -50,6 +50,7 @@ class GameLogic:
         
         self.state = "idle"
         self.state_time = time.time()
+        self.last_rfid_seen = {} # Tracking RFID timestamps for toss detection
         
     def load_data(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -85,9 +86,24 @@ class GameLogic:
             # Tag arrived at a station or plate
             if value in self.pieces_db:
                 piece_name = self.pieces_db[value]
-                # We reuse GamePiece instances if they exist, or create new
                 piece = self._get_or_create_piece(value, piece_name)
                 
+                # --- RFID Toss Experience Logic ---
+                station_name = config.STATIONS.get(reader_id, "Unknown")
+                if "Frying Pan" in station_name:
+                    now = time.time()
+                    if reader_id not in self.last_rfid_seen: self.last_rfid_seen[reader_id] = {}
+                    last_seen = self.last_rfid_seen[reader_id].get(value, 0)
+                    elapsed = now - last_seen
+                    
+                    # If seen before, and between 0.5s and 5.0s ago, count as a TOSS
+                    if 0.5 <= elapsed <= 5.0:
+                        print(f"[LOGIC] RFID Toss detected at {station_name}!")
+                        self.process_message("TOSS", str(reader_id), "1")
+                    
+                    self.last_rfid_seen[reader_id][value] = now
+                # ----------------------------------
+
                 # If reader is 2-8 it's a plate
                 if isinstance(reader_id, int) and 2 <= reader_id <= 8:
                     self.plate_contents[reader_id] = piece
