@@ -156,9 +156,11 @@ class GameLogic:
             req = config.THRESHOLDS.get(piece.name, {}).get(op_type, 0)
             if self.hardware and req > 0:
                 progress = piece.operations[op_type] / req
-                color = (255, 0, 0) # Red
-                if progress >= 1.0: color = (0, 255, 0) # Green
-                elif progress >= 0.5: color = (255, 255, 0) # Yellow
+                color = (255, 0, 0) # Red (0-49%)
+                if progress >= 1.0: 
+                    color = (0, 255, 0) # Green (100%)
+                elif progress >= 0.5: 
+                    color = (255, 80, 0) # Orange (50-99%)
                 
                 # Assign to correct strip
                 if station_name == "Vegetable Washer":
