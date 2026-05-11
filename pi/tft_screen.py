@@ -20,7 +20,7 @@ def setup_tft():
             gpio_DC=22, 
             gpio_RST=27, 
             gpio_CS=26,
-            bus_speed_hz=8000000
+            bus_speed_hz=2000000
         )
         
         # Setup the ILI9488 device, use a known FREE pin (GPIO 16) for backlight to avoid GPIO 18 conflicts
@@ -72,7 +72,7 @@ def draw_game_state(device, logic):
                 draw.text((10, 70), f"ORDER: {recipe['name']}", fill="white", font=font)
                 
             # Completed ingredients
-            ready_count = sum(1 for items in logic.station_contents.values() for p in items if p.state == "plated")
+            ready_count = len(logic.plate_contents)
             total_count = len(recipe['ingredients']) if recipe else 0
             draw.text((10, 100), f"PLATED: {ready_count}/{total_count}", fill="green", font=font)
             
