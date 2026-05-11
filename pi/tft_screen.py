@@ -63,12 +63,10 @@ def draw_game_state(device, logic):
 
     # 1. Background / Recipe Card
     recipe = logic.active_recipe
-    recipe_id = None
-    if recipe:
-        recipe_id = next((k for k, v in logic.recipes_db.items() if v == recipe), "None")
+    recipe_card_id = recipe.get("card_id", "None") if recipe else "None"
         
     asset_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
-    card_path = os.path.join(asset_dir, f"Recipe_Card_{recipe_id}.png")
+    card_path = os.path.join(asset_dir, f"Recipe_Card_{recipe_card_id}.png")
     
     if os.path.exists(card_path):
         try:
@@ -120,8 +118,8 @@ def draw_game_state(device, logic):
         
         # --- Ingredient Status List ---
         # Draw a translucent panel at the bottom for ingredients
-        panel_h = 80
-        draw.rectangle((0, device.height - panel_h, device.width, device.height), fill=(0, 0, 0, 180))
+        panel_h = 100
+        draw.rectangle((0, device.height - panel_h, device.width, device.height), fill=(0, 0, 0, 200))
         
         required = [ing for ing in recipe["ingredients"] if ing.strip()] if recipe else []
         
@@ -134,9 +132,22 @@ def draw_game_state(device, logic):
         available_pieces = all_pieces[:]
         plated_uids = [p.uid for p in logic.plate_contents.values()]
         
+        # Grid layout for TFT
+        cols = 4
+        cell_w = device.width // cols
+        cell_h = 45
+        
+        # Smaller font for TFT list
+        try: font_tiny = ImageFont.truetype(font_path, 16)
+        except: font_tiny = get_default_font()
+
         for i, ing_name in enumerate(required):
-            x = 10 + i * (device.width // len(required)) if len(required) > 0 else 10
-            y = device.height - panel_h + 5
+            row = i // cols
+            col = i % cols
+            x = 5 + col * cell_w
+            y = (device.height - panel_h + 5) + row * cell_h
+            
+            if y + cell_h > device.height: break # Avoid drawing off screen
             
             match = None
             for p in available_pieces:
@@ -149,21 +160,21 @@ def draw_game_state(device, logic):
             color = (0, 255, 0) if is_plated else "white"
             
             # Draw name
-            short_name = ing_name[:8] # Truncate for TFT
-            draw.text((x, y), short_name, fill=color, font=font_med)
+            short_name = ing_name[:10] # Truncate for TFT
+            draw.text((x, y), short_name, fill=color, font=font_tiny)
             
             # Draw progress
             if is_plated:
-                draw.text((x, y + 25), "PLATED", fill=(0, 255, 0), font=font_med)
+                draw.text((x, y + 18), "PLATED", fill=(0, 255, 0), font=font_tiny)
             elif match:
                 reqs = config.THRESHOLDS.get(ing_name, {})
                 status = ""
                 if reqs.get("spins", 0) > 0: status += f"S:{match.operations['spins']}/{reqs['spins']} "
                 if reqs.get("tosses", 0) > 0: status += f"T:{match.operations['tosses']}/{reqs['tosses']} "
                 if reqs.get("presses", 0) > 0: status += f"F:{match.operations['presses']}/{reqs['presses']} "
-                draw.text((x, y + 25), status.strip(), fill="yellow", font=font_med)
+                draw.text((x, y + 18), status.strip(), fill="yellow", font=font_tiny)
             else:
-                draw.text((x, y + 25), "MISSING", fill="red", font=font_med)
+                draw.text((x, y + 18), "MISSING", fill="red", font=font_tiny)
 
     elif logic.state == "win":
         draw.rectangle((0, device.height//2 - 50, device.width, device.height//2 + 50), fill=(0, 200, 0))
