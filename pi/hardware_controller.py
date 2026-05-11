@@ -1,14 +1,13 @@
 import time
 try:
     import board
-    import neopixel
     import neopixel_spi
     import busio
 except ImportError as e:
     print(f"❌ LIBRARY ERROR: {e}")
-    print("Try: sudo pip3 install adafruit-blinka adafruit-circuitpython-neopixel adafruit-circuitpython-neopixel-spi --break-system-packages")
+    print("Try: sudo pip3 install adafruit-blinka adafruit-circuitpython-neopixel-spi --break-system-packages")
     board = None
-    neopixel = None
+    neopixel_spi = None
 
 try:
     from gpiozero import Button
@@ -36,7 +35,7 @@ class HardwareController:
         # Initialize Neopixels (Dual SPI Mode for Pi 5)
         self.base_pixels = None
         self.lid_pixels = None
-        if neopixel and board:
+        if neopixel_spi and board:
             try:
                 import neopixel_spi
                 import busio
