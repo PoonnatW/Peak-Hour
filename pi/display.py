@@ -97,8 +97,9 @@ class DisplayService:
             pygame.draw.rect(s, border_color, (0, 0, rect.width, rect.height), width=2, border_radius=15)
         self.screen.blit(s, (rect.x, rect.y))
 
-    def update(self, state, elapsed):
+    def update(self, state, elapsed, piece_data=None):
         pygame.event.pump()
+        self.piece_data = piece_data or [] # Store progress data
         
         # Animated Background
         # Fill background
@@ -168,12 +169,24 @@ class DisplayService:
         self.render_text(time_str, self.height // 2, size="timer", color=t_color)
         
         # Mini Inventory (Top)
-        inv_rect = pygame.Rect(20, 20, self.width - 40, 80)
+        inv_rect = pygame.Rect(20, 20, self.width - 40, 100)
         self.draw_glass_panel(inv_rect, self.CLR_PANEL, alpha=100)
-        for i, ing in enumerate(self.ingredients):
+        
+        for i, piece in enumerate(self.piece_data):
+            ing = piece['name']
+            x_pos = 60 + i * 110
             if ing in self.assets:
-                small = pygame.transform.smoothscale(self.assets[ing], (60, 60))
-                self.screen.blit(small, (40 + i * 75, 30))
+                small = pygame.transform.smoothscale(self.assets[ing], (50, 50))
+                self.screen.blit(small, (x_pos - 25, 30))
+            
+            # Show counts
+            ops = []
+            if piece['spins'] > 0: ops.append(f"S:{piece['spins']}")
+            if piece['tosses'] > 0: ops.append(f"T:{piece['tosses']}")
+            if piece['presses'] > 0: ops.append(f"P:{piece['presses']}")
+            
+            status_str = " ".join(ops) if ops else "WAITING"
+            self.render_text(status_str, 90, x=x_pos, size="sub", color=self.CLR_TEXT)
 
         # Bottom Bar
         bar_rect = pygame.Rect(0, self.height - 100, self.width, 100)

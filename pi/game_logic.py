@@ -284,8 +284,33 @@ class GameLogic:
             if elapsed > 5:
                 self.reset_pressed()
                 
+        # Collect status for display
+        piece_data = []
+        if self.active_recipe:
+            # We look for all pieces that match our recipe requirements
+            required = self.active_recipe["ingredients"]
+            all_pieces = list(self.plate_contents.values())
+            for content in self.station_contents.values():
+                if isinstance(content, list): all_pieces.extend(content)
+                else: all_pieces.append(content)
+            
+            # Map them for display
+            for ing_name in required:
+                if not ing_name.strip(): continue
+                # Find the piece for this ingredient
+                match = next((p for p in all_pieces if p.name == ing_name), None)
+                if match:
+                    piece_data.append({
+                        "name": match.name,
+                        "spins": match.operations["spins"],
+                        "tosses": match.operations["tosses"],
+                        "presses": match.operations["presses"]
+                    })
+                else:
+                    piece_data.append({"name": ing_name, "spins": 0, "tosses": 0, "presses": 0})
+
         # Update the graphical display
-        self.display.update(self.state, elapsed)
+        self.display.update(self.state, elapsed, piece_data=piece_data)
 
     def bell_pressed(self):
         self.change_state("checking")
