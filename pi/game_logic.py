@@ -170,7 +170,11 @@ class GameLogic:
                 
         elif msg_type == "BELL":
             if self.state == "playing":
-                self.bell_pressed()
+                elapsed_play = time.time() - self.state_time
+                if elapsed_play > 10:
+                    self.bell_pressed()
+                else:
+                    print(f"[LOGIC] Serial Bell ignored: Too early ({elapsed_play:.1f}s)")
                 
     def _get_or_create_piece(self, uid, name):
         # Look for existing piece to maintain doneness state
@@ -333,6 +337,13 @@ class GameLogic:
             self.change_state("countdown")
             self.display.play_sound("countdown")
         elif self.state == "playing":
+            # Prevent "instant lose" from ghost presses or accidental bumps at start of game
+            now = time.time()
+            elapsed_play = now - self.state_time
+            if elapsed_play < 10:
+                print(f"[LOGIC] Bell ignored: Too early in game ({elapsed_play:.1f}s)")
+                return
+            
             print("[LOGIC] Bell rung! Checking order...")
             self.bell_pressed()
         else:

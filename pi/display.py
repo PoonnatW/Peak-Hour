@@ -146,8 +146,12 @@ class DisplayService:
         # Header Panel
         header_rect = pygame.Rect(50, 30, self.width - 100, 100)
         self.draw_glass_panel(header_rect, self.CLR_PANEL, self.CLR_ACCENT)
-        self.render_text("NEW ORDER RECEIVED", 60, size="sub", color=self.CLR_TEXT_DIM)
-        self.render_text(self.current_recipe.upper(), 100, size="main", color=self.CLR_TEXT)
+        self.render_text("NEW ORDER RECEIVED", 50, size="sub", color=self.CLR_TEXT_DIM)
+        self.render_text(self.current_recipe.upper(), 90, size="main", color=self.CLR_TEXT)
+        
+        # Pulsing Start instruction
+        alpha = int(155 + 100 * math.sin(time.time() * 4))
+        self.render_text("PRESS LID BUTTON TO START", self.height - 40, size="main", color=(alpha, 50, 50))
         
         # If we have a dedicated recipe card image, show it
         card_asset_name = f"Recipe_Card_{int(self.current_recipe_id)}" if self.current_recipe_id.isdigit() else ""
@@ -184,20 +188,25 @@ class DisplayService:
         self.render_text(time_str, self.height // 2, size="timer", color=t_color)
         
         # Mini Inventory (Top)
-        inv_rect = pygame.Rect(20, 20, self.width - 40, 100)
-        self.draw_glass_panel(inv_rect, self.CLR_PANEL, alpha=100)
+        inv_rect = pygame.Rect(10, 10, self.width - 20, 140)
+        self.draw_glass_panel(inv_rect, self.CLR_PANEL, alpha=150)
+        
+        # Calculate grid for ingredients
+        cols = 6
+        spacing_x = (self.width - 60) // cols
+        spacing_y = 65
         
         for i, piece in enumerate(self.piece_data):
             ing = piece['name']
-            x_pos = 60 + i * 110
+            row = i // cols
+            col = i % cols
             
-            # Draw a border if plated
-            if piece.get('plated', False):
-                pygame.draw.rect(self.screen, self.CLR_SUCCESS, (x_pos - 45, 25, 90, 70), width=3, border_radius=5)
+            x_pos = 45 + col * spacing_x
+            y_pos = 35 + row * spacing_y
             
             if ing in self.assets:
-                small = pygame.transform.smoothscale(self.assets[ing], (50, 50))
-                self.screen.blit(small, (x_pos - 25, 30))
+                small = pygame.transform.smoothscale(self.assets[ing], (40, 40))
+                self.screen.blit(small, (x_pos - 20, y_pos - 20))
             
             # Show counts as fractions
             ops = []
@@ -206,15 +215,13 @@ class DisplayService:
             if piece['presses_req'] > 0: ops.append(f"F:{piece['presses']}/{piece['presses_req']}")
             
             status_str = " ".join(ops) if ops else "READY"
-            if piece.get('plated', False): status_str = "PLATED"
-            
-            color = self.CLR_SUCCESS if piece.get('plated', False) else self.CLR_TEXT
-            self.render_text(status_str, 90, x=x_pos, size="sub", color=color)
+            # Smaller text for status to avoid overlap
+            self.render_text(status_str, y_pos + 25, x=x_pos, size="sub", color=self.CLR_TEXT)
 
         # Bottom Bar
-        bar_rect = pygame.Rect(0, self.height - 100, self.width, 100)
+        bar_rect = pygame.Rect(0, self.height - 80, self.width, 80)
         self.draw_glass_panel(bar_rect, self.CLR_BG, alpha=200)
-        self.render_text(f"CURRENT TASK: {self.current_recipe}", self.height - 115, size="sub", color=self.CLR_ACCENT)
+        self.render_text(f"TASK: {self.current_recipe}", self.height - 105, size="sub", color=self.CLR_ACCENT)
 
         # Action Labels (Debug)
         self.draw_action(self.btn_spin, "SPIN [S]", self.CLR_ACCENT)
