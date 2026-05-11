@@ -2,8 +2,11 @@ import time
 try:
     import board
     import neopixel
+    import neopixel_spi
+    import busio
 except ImportError:
-    print("Adafruit Blinka and Neopixel libraries not found.")
+    print("One or more libraries (board, neopixel, neopixel_spi, busio) not found.")
+    print("Try: sudo pip3 install adafruit-blinka adafruit-circuitpython-neopixel-spi --break-system-packages")
     board = None
     neopixel = None
 
