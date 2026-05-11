@@ -41,9 +41,25 @@ def main():
 
     # Keep alive loop
     try:
+        import pygame
         while True:
-            time.sleep(0.1)
+            # Handle Pygame Events (Mouse clicks for debugging)
+            for event in pygame.event.get():
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    pos = pygame.mouse.get_pos()
+                    if logic.state == "idle":
+                        if display.debug_btn_rect.collidepoint(pos):
+                            print("[DEBUG] Manual Start Clicked")
+                            logic.process_message("RCPE", "0", "0000") # Start the test recipe
+                    elif logic.state == "playing":
+                        # Click to ring the bell
+                        logic.process_message("BELL", "0", "1")
+                
+                if event.type == pygame.QUIT:
+                    sys.exit()
+
             logic.update()
+            time.sleep(0.05)
     except KeyboardInterrupt:
         print("\nExiting...")
     finally:

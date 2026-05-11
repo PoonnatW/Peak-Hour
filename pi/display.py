@@ -34,6 +34,9 @@ class DisplayService:
         self.COLOR_RED = (220, 50, 50)
         self.COLOR_GREEN = (50, 200, 100)
         
+        # Debug Button Rect
+        self.debug_btn_rect = pygame.Rect(self.width // 2 - 80, self.height - 60, 160, 40)
+        
         # Fonts
         try:
             self.font_title = pygame.font.SysFont("Arial", 42, bold=True)
@@ -92,6 +95,10 @@ class DisplayService:
         # Draw a subtle pulsing background or logo here
         self.render_text("PEAK HOUR", self.height // 2 - 30, size="title", color=self.COLOR_BLACK)
         self.render_text("Scan Recipe Card to Start", self.height // 2 + 30, size="main", color=self.COLOR_ACCENT)
+        
+        # Draw Debug Button
+        pygame.draw.rect(self.screen, self.COLOR_BLACK, self.debug_btn_rect, border_radius=10)
+        self.render_text("DEBUG START", self.debug_btn_rect.centery, x=self.debug_btn_rect.centerx, size="sub", color=self.COLOR_WHITE)
 
     def draw_showcase(self):
         self.render_text("ORDER UP!", 35, size="title", color=self.COLOR_BLACK)
