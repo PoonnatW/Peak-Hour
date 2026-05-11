@@ -60,12 +60,12 @@ def setup_tft():
             gpio=gpio_backend
         )
         
-        # Setup the ILI9488 device, disable luma's backlight control to avoid GPIO 18 conflicts
+        # Setup the ILI9488 device, use a known FREE pin (GPIO 16) for backlight to avoid GPIO 18 conflicts
         device = ili9488(
             serial_iface, 
             rotate=1, 
             gpio=gpio_backend, 
-            gpio_LIGHT=None
+            gpio_LIGHT=16
         )
         print("[TFT] Display initialized successfully.")
         return device
