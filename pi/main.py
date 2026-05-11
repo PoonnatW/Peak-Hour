@@ -47,8 +47,14 @@ def main():
                     print(f"[DEBUG] Click at {pos}")
                     if logic.state == "idle":
                         if display.debug_btn_rect.collidepoint(pos):
-                            print("[DEBUG] Manual Start Clicked")
-                            logic.process_message("RCPE", "0", "0000")
+                            import random
+                            recipe_ids = list(logic.recipes_db.keys())
+                            if recipe_ids:
+                                rid = random.choice(recipe_ids)
+                                print(f"[DEBUG] Manual Start Clicked - Loading {rid}")
+                                logic.process_message("RCPE", "0", rid)
+                            else:
+                                print("[DEBUG] No recipes found in database!")
                     elif logic.state == "playing":
                         if display.btn_spin.collidepoint(pos):
                             logic.process_message("SPIN", "1", "1") # ID 1 = Vegetable Washer
