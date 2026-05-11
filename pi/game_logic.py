@@ -246,8 +246,13 @@ class GameLogic:
                 self._handle_operation(station, "presses")
 
     def lid_button_pressed(self):
-        # Lid Button (GPIO 5) - Reserved for future use (e.g., checking if lid is closed)
-        print("[LOGIC] Lid Button Pressed (GPIO 5)")
+        # Lid Button (GPIO 5) -> Confirm Order / Start Countdown
+        if self.state == "showcase":
+            print("[LOGIC] Order Confirmed! Starting countdown...")
+            self.change_state("countdown")
+            self.display.play_sound("countdown")
+        else:
+            print("[LOGIC] Lid Button Pressed (GPIO 5)")
 
     def update(self):
         # Update AS5600 for Vegetable Washer via hardware controller
@@ -266,9 +271,8 @@ class GameLogic:
                 self.change_state("showcase")
                 # display showcase implementation is pending art team
         elif self.state == "showcase":
-            if elapsed > 5:
-                self.change_state("countdown")
-                self.display.play_sound("countdown")
+            # Now waits for manual Lid Button press to proceed to countdown
+            pass
         elif self.state == "countdown":
             if elapsed > 3:
                 self.change_state("playing")
