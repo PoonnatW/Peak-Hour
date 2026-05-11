@@ -69,7 +69,8 @@ class GameLogic:
                     reqs = row['Ingredients'].split('|')
                     self.recipes_db[row['UID']] = {
                         "name": row['DishName'],
-                        "ingredients": reqs
+                        "ingredients": reqs,
+                        "card_id": row.get('CardID', row['UID'])
                     }
 
     def process_message(self, msg_type, msg_id, value):
@@ -257,7 +258,7 @@ class GameLogic:
             recipe = self.recipes_db[uid]
             self.active_recipe = recipe
             self.change_state("recipe_scanned")
-            self.display.show_recipe(recipe["name"], recipe["ingredients"], recipe_id=uid)
+            self.display.show_recipe(recipe["name"], recipe["ingredients"], recipe_id=recipe["card_id"])
             
             # Clear all current doneness for a fresh start 
             self._reset_all_doneness()
