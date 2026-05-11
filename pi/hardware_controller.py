@@ -1,11 +1,17 @@
 import time
+# Smart LED Configuration (Adafruit with rpi-ws281x Fallback)
 try:
     import board
     import neopixel
+    ADAFRUIT_AVAILABLE = True
 except ImportError:
-    print("Adafruit Blinka and Neopixel libraries not found.")
-    board = None
-    neopixel = None
+    ADAFRUIT_AVAILABLE = False
+
+try:
+    from rpi_ws281x import Adafruit_NeoPixel, Color
+    WS281X_AVAILABLE = True
+except ImportError:
+    WS281X_AVAILABLE = False
 
 try:
     from gpiozero import Button
@@ -20,26 +26,40 @@ except ImportError:
     smbus2 = None
 
 class HardwareController:
-    """
-    A controller for interacting with Base/Lid Neopixels, Buttons, and AS5600 sensor.
-    Pins: 
-    - Base Neopixel: GPIO 13
-    - Lid Neopixel: GPIO 18
-    - Base Button: GPIO 6
-    - Lid Button: GPIO 5
-    - AS5600: I2C Bus 4 (SDA 23, SCL 24)
-    """
     def __init__(self, i2c_bus=4):
         # Initialize Neopixels
         self.base_pixels = None
         self.lid_pixels = None
-        if neopixel and board:
+        self.led_mode = None # "adafruit" or "ws281x"
+
+        # Try Adafruit first
+        if ADAFRUIT_AVAILABLE:
             try:
                 self.base_pixels = neopixel.NeoPixel(board.D13, 10, auto_write=False)
                 self.lid_pixels = neopixel.NeoPixel(board.D18, 10, auto_write=False)
-                print("Neopixels initialized: Base (GPIO 13), Lid (GPIO 18)")
+                self.led_mode = "adafruit"
+                print("Neopixels initialized via Adafruit (GPIO 13, 18)")
             except Exception as e:
-                print(f"Error initializing Neopixels: {e}")
+                print(f"Adafruit Neopixel failed (likely Pi 5 driver issue): {e}")
+                self.base_pixels = None
+                self.lid_pixels = None
+
+        # Fallback to rpi-ws281x if Adafruit failed
+        if self.led_mode is None and WS281X_AVAILABLE:
+            try:
+                # Base Strip: GPIO 13, Channel 1
+                self.base_pixels = Adafruit_NeoPixel(10, 13, 800000, 10, False, 255, 1)
+                self.base_pixels.begin()
+                # Lid Strip: GPIO 18, Channel 0
+                self.lid_pixels = Adafruit_NeoPixel(10, 18, 800000, 10, False, 255, 0)
+                self.lid_pixels.begin()
+                self.led_mode = "ws281x"
+                print("Neopixels initialized via rpi-ws281x Fallback (GPIO 13, 18)")
+            except Exception as e:
+                print(f"WS281X Fallback failed: {e}")
+
+        if self.led_mode is None:
+            print("WARNING: No Neopixel library working. LEDs will be disabled.")
 
         # Initialize Buttons
         self.base_btn = None
@@ -107,17 +127,36 @@ class HardwareController:
 
     def set_led_color(self, index, color, target="base"):
         pixels = self.base_pixels if target == "base" else self.lid_pixels
-        if pixels and 0 <= index < pixels.n:
-            pixels[index] = color
-            pixels.show()
-            
+        if not pixels: return
+        
+        if self.led_mode == "adafruit":
+            if 0 <= index < pixels.n:
+                pixels[index] = color
+                pixels.show()
+        elif self.led_mode == "ws281x":
+            if 0 <= index < 10:
+                c = Color(color[0], color[1], color[2])
+                pixels.setPixelColor(index, c)
+                pixels.show()
+
     def fill_leds(self, color, target="all"):
         if target in ["base", "all"] and self.base_pixels:
-            self.base_pixels.fill(color)
-            self.base_pixels.show()
+            if self.led_mode == "adafruit":
+                self.base_pixels.fill(color)
+                self.base_pixels.show()
+            elif self.led_mode == "ws281x":
+                c = Color(color[0], color[1], color[2])
+                for i in range(10): self.base_pixels.setPixelColor(i, c)
+                self.base_pixels.show()
+                
         if target in ["lid", "all"] and self.lid_pixels:
-            self.lid_pixels.fill(color)
-            self.lid_pixels.show()
+            if self.led_mode == "adafruit":
+                self.lid_pixels.fill(color)
+                self.lid_pixels.show()
+            elif self.led_mode == "ws281x":
+                c = Color(color[0], color[1], color[2])
+                for i in range(10): self.lid_pixels.setPixelColor(i, c)
+                self.lid_pixels.show()
             
     def clear_leds(self):
         self.fill_leds((0, 0, 0), "all")
