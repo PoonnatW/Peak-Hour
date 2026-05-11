@@ -11,11 +11,11 @@ def run_test():
         spi1 = busio.SPI(board.SCK_1, board.MOSI_1)
         base = neopixel_spi.NeoPixel_SPI(spi1, 10, brightness=0.5, auto_write=True)
 
-        # Initialize Lid (SPI3 on Pin 8 / GPIO 14)
-        print("Initializing Lid Strip on Pin 8...")
-        # Note: board.D15 is SCK, board.D14 is MOSI for SPI3
-        spi3 = busio.SPI(board.D15, board.D14)
-        lid = neopixel_spi.NeoPixel_SPI(spi3, 10, brightness=0.5, auto_write=True)
+        # Initialize Lid (SPI2 on Pin 28 / GPIO 1)
+        print("Initializing Lid Strip on Pin 28...")
+        # SCLK=D0 (Pin 27), MOSI=D1 (Pin 28)
+        spi2 = busio.SPI(board.D0, board.D1)
+        lid = neopixel_spi.NeoPixel_SPI(spi2, 10, brightness=0.5, auto_write=True)
 
         sequence = [
             ((255, 0, 0), "🔴 RED"),
