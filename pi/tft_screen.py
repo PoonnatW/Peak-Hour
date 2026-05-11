@@ -25,7 +25,7 @@ def setup_tft():
             gpio_CS=8,
             gpio_DC=22, 
             gpio_RST=27, 
-            bus_speed_hz=16000000
+            bus_speed_hz=8000000
         )
         
         # Setup the ILI9488 device
