@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleDisplayName</key>
+	<string>RealVNC Connect Setup</string>
+	<key>CFBundleExecutable</key>
+	<string>rvncconnectsetup</string>
+	<key>CFBundleIconFile</key>
+	<string>rvncconnectsetup</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.realvnc.rvncconnectsetup</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>RealVNC Connect Setup</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleShortVersionString</key>
+	<string>3.4.0</string>
+	<key>CFBundleVersion</key>
+	<string>3.4.0.5</string>
+	<key>NSHighResolutionCapable</key>
+	<string>True</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © RealVNC Ltd.</string>
+	<key>NSSystemAdministrationUsageDescription</key>
+	<string></string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>RealVNC Connect Setup URL</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.realvnc.rvncconnectsetup</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSPrincipalClass</key>
+	<string>DummySettingForHiDpiSupport</string>
+</dict>
+</plist>

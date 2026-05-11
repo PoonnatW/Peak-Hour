@@ -36,20 +36,23 @@ class HardwareController:
         self.base_pixels = None
         self.lid_pixels = None
         if neopixel_spi and board:
+            # Try Base Strip (Pin 38)
             try:
-                # SPI1 on GPIO 20 (Physical Pin 38) for Base
+                import busio
                 spi1 = busio.SPI(board.SCK_1, board.MOSI_1)
                 self.base_pixels = neopixel_spi.NeoPixel_SPI(spi1, 10, auto_write=False)
-                
-                # SPI3 on GPIO 14 (Physical Pin 8) for Lid
-                # We need to specify the pins for SPI3
-                spi3 = busio.SPI(board.D15, board.D14) # SCK=15, MOSI=14
-                self.lid_pixels = neopixel_spi.NeoPixel_SPI(spi3, 10, auto_write=False)
-                
-                print("Neopixels initialized: Base (Pin 38), Lid (Pin 8)")
+                print("✅ Base Neopixels initialized (Pin 38)")
             except Exception as e:
-                print(f"Error initializing Dual SPI Neopixels: {e}")
-                print("Ensure 'dtoverlay=spi1-1cs' AND 'dtoverlay=spi3-1cs' are in config.txt")
+                print(f"⚠️ Base Neopixel fail: {e}")
+
+            # Try Lid Strip (Pin 8)
+            try:
+                import busio
+                spi3 = busio.SPI(board.D15, board.D14)
+                self.lid_pixels = neopixel_spi.NeoPixel_SPI(spi3, 10, auto_write=False)
+                print("✅ Lid Neopixels initialized (Pin 8)")
+            except Exception as e:
+                print(f"⚠️ Lid Neopixel fail: {e} (Check SPI3 overlay)")
 
         # Initialize Buttons
         self.base_btn = None
