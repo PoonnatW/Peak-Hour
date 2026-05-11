@@ -170,14 +170,33 @@ class GameLogic:
             self.active_recipe = recipe
             self.change_state("recipe_scanned")
             self.display.show_recipe(recipe["name"], recipe["ingredients"])
+            
             # Clear all current doneness for a fresh start 
             self._reset_all_doneness()
+            
+            # --- AUTO-POPULATE STATIONS FOR HARDWARE TESTING ---
+            # This allows you to test sensors without scanning ingredient tags
+            print(f"[DEBUG] Auto-populating stations for {recipe['name']}...")
+            for ing_name in recipe["ingredients"]:
+                if not ing_name.strip(): continue
+                
+                # Create a temporary piece for this ingredient
+                piece = GamePiece(f"TMP_{ing_name}", ing_name)
+                
+                # Find the right station for it based on thresholds
+                if ing_name in config.THRESHOLDS:
+                    reqs = config.THRESHOLDS[ing_name]
+                    if reqs.get("spins", 0) > 0:
+                        self.station_contents["Vegetable Washer"] = piece
+                    elif reqs.get("tosses", 0) > 0:
+                        self.station_contents["Frying Pan 1"] = piece
+                    elif reqs.get("presses", 0) > 0:
+                        self.station_contents["Deep Fryer 1"] = piece
+            # ---------------------------------------------------
 
     def _reset_all_doneness(self):
-        for piece in self.station_contents.values():
-            piece.reset_doneness()
-        for piece in self.plate_contents.values():
-            piece.reset_doneness()
+        self.station_contents = {}
+        self.plate_contents = {}
         # Turn off all LEDs
         for led_id in config.LEDS.values():
             self.serial.send_command("LED", led_id, "OFF")
@@ -260,8 +279,10 @@ class GameLogic:
         # Ignore empty ingredient requirement if recipe is just a stub
         required = [ing for ing in self.active_recipe["ingredients"] if ing.strip()]
         
-        # Check plate contents
-        for piece in self.plate_contents.values():
+        # Check plate contents AND station contents (for manual testing)
+        all_available_pieces = list(self.plate_contents.values()) + list(self.station_contents.values())
+        
+        for piece in all_available_pieces:
             if piece.name in required:
                 if piece.is_cooked():
                     required.remove(piece.name)
