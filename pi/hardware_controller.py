@@ -36,11 +36,14 @@ class HardwareController:
         self.pixels = None
         if neopixel_spi and board:
             try:
-                # SPI 1 on Pin 38 / GPIO 20
-                spi1 = busio.SPI(board.SCK_1, board.MOSI_1)
+                # SPI 1 on Pin 38 / GPIO 20 (MOSI) and Pin 40 / GPIO 21 (SCLK)
+                # Explicitly using GPIO pins to avoid Blinka mapping issues on Pi 5
+                import board
+                spi1 = busio.SPI(board.D21, board.D20) 
                 # Chained 20 pixels (10 Base + 10 Lid)
-                self.pixels = neopixel_spi.NeoPixel_SPI(spi1, 20, auto_write=False)
-                print("✅ NeoPixels initialized (Chained on Pin 38)")
+                # Explicitly set bitrate to 6.4MHz for reliable NeoPixel timing
+                self.pixels = neopixel_spi.NeoPixel_SPI(spi1, 20, bitrate=6400000, auto_write=True)
+                print("✅ NeoPixels initialized (Chained on SPI1/GPIO20)")
             except Exception as e:
                 print(f"⚠️ NeoPixel fail: {e}")
 
