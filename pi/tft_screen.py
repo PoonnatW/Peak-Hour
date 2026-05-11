@@ -26,7 +26,7 @@ def setup_tft():
         # Setup the ILI9488 device, use a known FREE pin (GPIO 16) for backlight to avoid GPIO 18 conflicts
         device = ili9488(
             serial_iface, 
-            rotate=1, 
+            rotate=0, 
             gpio_LIGHT=16
         )
         print("[TFT] Display initialized successfully.")
