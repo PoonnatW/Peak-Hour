@@ -134,23 +134,24 @@ Use `INPUT_PULLUP` mode. Buttons connect pin to GND when pressed. Debouncing han
 
 GPIO uses BCM numbering. ESP32 connections are via USB, not GPIO pins.
 
-### I2C — TFT Screen
+### SPI — TFT Screen (ILI9488)
 
-| GPIO | Physical Pin | Function |
-|---|---|---|
-| 2 | Pin 3 | SDA |
-| 3 | Pin 5 | SCL |
-
-> Confirm I2C address of your TFT module before writing display code.
+| GPIO | Physical Pin | Function | Direction |
+|---|---|---|---|
+| 10 | Pin 19 | MOSI | Output |
+| 11 | Pin 23 | SCLK | Output |
+| 8  | Pin 24 | CS (CE0) | Output |
+| 22 | Pin 15 | DC/RS | Output |
+| 27 | Pin 13 | Reset | Output |
 
 ### GPIO
 
 | GPIO | Physical Pin | Function | Direction |
 |---|---|---|---|
 | 17 | Pin 11 | USB speaker trigger | Output |
-| 22 | Pin 15 | Reset button | Input (pull-up) |
+| 4  | Pin 7  | Reset button | Input (pull-up) |
 
-> The bell button has been moved off the Pi onto ESP1 (see ESP32 #1 above). Pi GPIO 27 is now free.
+> Note: Reset button moved from GPIO 22 to GPIO 4 to avoid conflict with TFT DC/RS.
 
 ### USB Serial
 

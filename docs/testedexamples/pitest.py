@@ -2,9 +2,13 @@ import serial
 import time
 from PIL import ImageFont
 
-# --- Luma Imports ---
-from luma.core.interface.serial import spi
-from luma.lcd.device import ili9488
+import sys
+import os
+
+# Add the 'pi' directory to the path so we can import tft_screen
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../pi'))
+from tft_screen import setup_tft, get_default_font
+
 from luma.core.render import canvas
 
 # --- CONFIGURATION ---
@@ -12,15 +16,13 @@ SERIAL_PORT = '/dev/ttyUSB0'
 BAUD_RATE = 115200
 TIMEOUT_SECONDS = 0.5 
 
-# 1. Setup Luma SPI interface 
-# port=0, device=0 automatically binds CS to GPIO 8 (Physical Pin 24)
-serial_iface = spi(port=0, device=0, gpio_DC=24, gpio_RST=25, bus_speed_hz=24000000)
+# 1. Setup the TFT device using the external config
+device = setup_tft()
+if device is None:
+    print("CRITICAL: Could not initialize TFT. Exiting.")
+    sys.exit(1)
 
-# 2. Setup the ILI9488 device
-# rotate=1 automatically rotates the screen 90 degrees to Landscape!
-device = ili9488(serial_iface)
-
-font = ImageFont.load_default()
+font = get_default_font()
 
 # Dictionary to track the current state of the game board
 board_state = {

@@ -6,10 +6,7 @@ import time
 def test_tomato():
     print("Starting Tomato Display Test...")
     
-    # Try to force the framebuffer if specified
-    if "FRAMEBUFFER" not in os.environ:
-        os.environ["SDL_FBDEV"] = "/dev/fb1"
-
+    # pygame initialization
     pygame.init()
     
     # 3.5" TFT resolution is typically 480x320

@@ -29,11 +29,11 @@ def main():
     hardware.set_button_callback(logic.hardware_button_pressed)
     
     # Setup physical buttons based on docs/pinout.md
-    # Reset = GPIO 22 (Bell moved to ESP1)
+    # Reset = GPIO 4 (Moved from 22 due to TFT conflict)
     try:
-        reset_btn = Button(22, pull_up=True, bounce_time=0.1)
+        reset_btn = Button(4, pull_up=True, bounce_time=0.1)
         reset_btn.when_pressed = logic.reset_pressed
-        print("Hardware buttons initialized.")
+        print("Hardware buttons initialized (Reset on GPIO 4).")
     except Exception as e:
         print(f"Warning: Could not initialize GPIO buttons: {e}")
         print("Are you running this on a Raspberry Pi?")
