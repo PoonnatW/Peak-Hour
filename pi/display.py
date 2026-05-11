@@ -183,7 +183,7 @@ class DisplayService:
             ops = []
             if piece['spins_req'] > 0: ops.append(f"S:{piece['spins']}/{piece['spins_req']}")
             if piece['tosses_req'] > 0: ops.append(f"T:{piece['tosses']}/{piece['tosses_req']}")
-            if piece['presses_req'] > 0: ops.append(f"P:{piece['presses']}/{piece['presses_req']}")
+            if piece['presses_req'] > 0: ops.append(f"F:{piece['presses']}/{piece['presses_req']}")
             
             status_str = " ".join(ops) if ops else "READY"
             self.render_text(status_str, 90, x=x_pos, size="sub", color=self.CLR_TEXT)
@@ -196,7 +196,7 @@ class DisplayService:
         # Action Labels (Debug)
         self.draw_action(self.btn_spin, "SPIN [S]", self.CLR_ACCENT)
         self.draw_action(self.btn_toss, "TOSS [T]", (255, 165, 0))
-        self.draw_action(self.btn_press, "PRESS [P]", self.CLR_DANGER)
+        self.draw_action(self.btn_press, "FRIES [P]", self.CLR_DANGER)
         self.draw_action(self.btn_bell, "SERVICE! [B]", self.CLR_SUCCESS)
 
     def draw_action(self, rect, text, color):

@@ -1,15 +1,3 @@
 UID,DishName,Ingredients
-0000,Test Burger,Beef Steak|Tomato|Mushroom|Broccoli
-R02,Stub Recipe 2,
-R03,Stub Recipe 3,
-R04,Stub Recipe 4,
-R05,Stub Recipe 5,
-R06,Stub Recipe 6,
-R07,Stub Recipe 7,
-R08,Stub Recipe 8,
-R09,Stub Recipe 9,
-R10,Stub Recipe 10,
-R11,Stub Recipe 11,
-R12,Stub Recipe 12,
-R13,Stub Recipe 13,
-R14,Stub Recipe 14,
+0000,Test Burger,Beef Steak|Tomato|Mushroom
+0001,Chicken & Fries,Chicken|French Fries|Broccoli
