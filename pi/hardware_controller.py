@@ -32,6 +32,7 @@ class HardwareController:
     - AS5600: I2C Bus 4 (SDA 23, SCL 24)
     """
     def __init__(self, i2c_bus=4):
+        global board, neopixel_spi
         # Initialize Neopixels (Chained SPI Mode)
         self.pixels = None
         if neopixel_spi and board:
