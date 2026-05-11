@@ -41,7 +41,7 @@ class DisplayService:
         pygame.display.set_caption("PEAK HOUR | EXECUTIVE CHEF")
         
         # --- CLASSIC LIGHT DESIGN TOKENS ---
-        self.CLR_BG = (245, 245, 245)          # Soft White
+        self.CLR_BG = (255, 255, 255)          # Pure White
         self.CLR_PANEL = (225, 225, 230)       # Light Gray
         self.CLR_ACCENT = (0, 102, 204)        # Professional Blue
         self.CLR_SUCCESS = (0, 150, 0)         # Forest Green
@@ -101,15 +101,9 @@ class DisplayService:
         pygame.event.pump()
         
         # Animated Background
-        t = time.time()
-        pulse = (math.sin(t * 2) + 1) * 5
-        self.screen.fill((10 + pulse, 10, 15))
-        
-        # Subtle Grid
-        for x in range(0, self.width, 40):
-            pygame.draw.line(self.screen, (230, 230, 235), (x, 0), (x, self.height))
-        for y in range(0, self.height, 40):
-            pygame.draw.line(self.screen, (230, 230, 235), (0, y), (self.width, y))
+        # Fill background
+        self.screen.fill(self.CLR_BG)
+        # Grid removed for "All White" look
         
         if state == "idle":
             self.draw_idle()
