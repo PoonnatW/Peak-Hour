@@ -1,11 +1,11 @@
 import time
 try:
-    from rpi_ws281x import Adafruit_NeoPixel, Color
-    ws281x_available = True
+    import board
+    import neopixel
 except ImportError:
-    print("rpi-ws281x library not found. Run: sudo pip3 install rpi-ws281x")
-    ws281x_available = False
-    Color = None
+    print("Adafruit Blinka and Neopixel libraries not found.")
+    board = None
+    neopixel = None
 
 try:
     from gpiozero import Button
@@ -30,18 +30,14 @@ class HardwareController:
     - AS5600: I2C Bus 4 (SDA 23, SCL 24)
     """
     def __init__(self, i2c_bus=4):
-        # Initialize Neopixels (rpi-ws281x)
+        # Initialize Neopixels
         self.base_pixels = None
         self.lid_pixels = None
-        if ws281x_available:
+        if neopixel and board:
             try:
-                # Base Strip: GPIO 13, Channel 1
-                self.base_pixels = Adafruit_NeoPixel(10, 13, 800000, 10, False, 255, 1)
-                self.base_pixels.begin()
-                # Lid Strip: GPIO 18, Channel 0
-                self.lid_pixels = Adafruit_NeoPixel(10, 18, 800000, 10, False, 255, 0)
-                self.lid_pixels.begin()
-                print("Neopixels initialized via rpi-ws281x: Base (GPIO 13), Lid (GPIO 18)")
+                self.base_pixels = neopixel.NeoPixel(board.D13, 10, auto_write=False)
+                self.lid_pixels = neopixel.NeoPixel(board.D18, 10, auto_write=False)
+                print("Neopixels initialized: Base (GPIO 13), Lid (GPIO 18)")
             except Exception as e:
                 print(f"Error initializing Neopixels: {e}")
 
@@ -110,31 +106,19 @@ class HardwareController:
             self.last_angle = angle
 
     def set_led_color(self, index, color, target="base"):
-        """
-        Sets a specific pixel to a color.
-        color: tuple (r, g, b)
-        """
         pixels = self.base_pixels if target == "base" else self.lid_pixels
-        if pixels and 0 <= index < 10:
-            # rpi-ws281x uses Color(r, g, b)
-            c = Color(color[0], color[1], color[2])
-            pixels.setPixelColor(index, c)
+        if pixels and 0 <= index < pixels.n:
+            pixels[index] = color
             pixels.show()
-
+            
     def fill_leds(self, color, target="all"):
-        """
-        Fills a strip or all strips with a color.
-        """
-        c = Color(color[0], color[1], color[2])
         if target in ["base", "all"] and self.base_pixels:
-            for i in range(10):
-                self.base_pixels.setPixelColor(i, c)
+            self.base_pixels.fill(color)
             self.base_pixels.show()
         if target in ["lid", "all"] and self.lid_pixels:
-            for i in range(10):
-                self.lid_pixels.setPixelColor(i, c)
+            self.lid_pixels.fill(color)
             self.lid_pixels.show()
-
+            
     def clear_leds(self):
         self.fill_leds((0, 0, 0), "all")
 
