@@ -179,13 +179,13 @@ class DisplayService:
                 small = pygame.transform.smoothscale(self.assets[ing], (50, 50))
                 self.screen.blit(small, (x_pos - 25, 30))
             
-            # Show counts
+            # Show counts as fractions
             ops = []
-            if piece['spins'] > 0: ops.append(f"S:{piece['spins']}")
-            if piece['tosses'] > 0: ops.append(f"T:{piece['tosses']}")
-            if piece['presses'] > 0: ops.append(f"P:{piece['presses']}")
+            if piece['spins_req'] > 0: ops.append(f"S:{piece['spins']}/{piece['spins_req']}")
+            if piece['tosses_req'] > 0: ops.append(f"T:{piece['tosses']}/{piece['tosses_req']}")
+            if piece['presses_req'] > 0: ops.append(f"P:{piece['presses']}/{piece['presses_req']}")
             
-            status_str = " ".join(ops) if ops else "WAITING"
+            status_str = " ".join(ops) if ops else "READY"
             self.render_text(status_str, 90, x=x_pos, size="sub", color=self.CLR_TEXT)
 
         # Bottom Bar

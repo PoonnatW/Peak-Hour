@@ -304,15 +304,25 @@ class GameLogic:
                 if not ing_name.strip(): continue
                 # Find the piece for this ingredient
                 match = next((p for p in all_pieces if p.name == ing_name), None)
+                reqs = config.THRESHOLDS.get(ing_name, {})
+                
                 if match:
                     piece_data.append({
                         "name": match.name,
                         "spins": match.operations["spins"],
+                        "spins_req": reqs.get("spins", 0),
                         "tosses": match.operations["tosses"],
-                        "presses": match.operations["presses"]
+                        "tosses_req": reqs.get("tosses", 0),
+                        "presses": match.operations["presses"],
+                        "presses_req": reqs.get("presses", 0)
                     })
                 else:
-                    piece_data.append({"name": ing_name, "spins": 0, "tosses": 0, "presses": 0})
+                    piece_data.append({
+                        "name": ing_name, 
+                        "spins": 0, "spins_req": reqs.get("spins", 0),
+                        "tosses": 0, "tosses_req": reqs.get("tosses", 0),
+                        "presses": 0, "presses_req": reqs.get("presses", 0)
+                    })
 
         # Update the graphical display
         self.display.update(self.state, elapsed, piece_data=piece_data)
