@@ -37,8 +37,6 @@ class HardwareController:
         self.lid_pixels = None
         if neopixel_spi and board:
             try:
-                import neopixel_spi
-                import busio
                 # SPI1 on GPIO 20 (Physical Pin 38) for Base
                 spi1 = busio.SPI(board.SCK_1, board.MOSI_1)
                 self.base_pixels = neopixel_spi.NeoPixel_SPI(spi1, 10, auto_write=False)
