@@ -247,12 +247,14 @@ class GameLogic:
 
     def lid_button_pressed(self):
         # Lid Button (GPIO 5) -> Confirm Order / Start Countdown
-        if self.state == "showcase":
+        print(f"[DEBUG] Lid Button Pressed! Current State: {self.state}")
+        
+        if self.state in ["recipe_scanned", "showcase"]:
             print("[LOGIC] Order Confirmed! Starting countdown...")
             self.change_state("countdown")
             self.display.play_sound("countdown")
         else:
-            print("[LOGIC] Lid Button Pressed (GPIO 5)")
+            print(f"[LOGIC] Lid Button ignored because state is {self.state}")
 
     def update(self):
         # Update AS5600 for Vegetable Washer via hardware controller

@@ -55,6 +55,10 @@ def main():
                                 logic.process_message("RCPE", "0", rid)
                             else:
                                 print("[DEBUG] No recipes found in database!")
+                    elif logic.state == "showcase":
+                        # Fallback: Click anywhere to confirm if button is broken
+                        print("[DEBUG] Manual Confirm Clicked")
+                        logic.lid_button_pressed()
                     elif logic.state == "playing":
                         if display.btn_spin.collidepoint(pos):
                             logic.process_message("SPIN", "1", "1") # ID 1 = Vegetable Washer
@@ -67,7 +71,9 @@ def main():
                 
                 # Keyboard shortcuts for quick debugging
                 if event.type == pygame.KEYDOWN:
-                    if logic.state == "playing":
+                    if logic.state == "showcase":
+                        if event.key == pygame.K_RETURN: logic.lid_button_pressed()
+                    elif logic.state == "playing":
                         if event.key == pygame.K_s: logic.process_message("SPIN", "1", "1")
                         elif event.key == pygame.K_t: logic.process_message("TOSS", "9", "1")
                         elif event.key == pygame.K_p: logic.process_message("BTN", "0", "1")
