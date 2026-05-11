@@ -40,50 +40,97 @@ def get_default_font():
     return ImageFont.load_default()
 
 def draw_game_state(device, logic):
-    """Draws the current game state to the TFT screen."""
+    """Draws a highly graphical game state to the TFT screen using Pillow."""
     if not device: return
     
-    with canvas(device) as draw:
-        font = get_default_font()
+    from PIL import Image, ImageDraw, ImageFont
+    import os
+    import time
+    
+    # Create base image
+    img = Image.new("RGB", (device.width, device.height), "white")
+    draw = ImageDraw.Draw(img)
+    
+    # Try to load a nice font
+    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+    try:
+        font_large = ImageFont.truetype(font_path, 40)
+        font_med = ImageFont.truetype(font_path, 24)
+    except:
+        font_large = get_default_font()
+        font_med = get_default_font()
+
+    # 1. Background / Recipe Card
+    recipe = logic.active_recipe
+    recipe_id = None
+    if recipe:
+        recipe_id = next((k for k, v in logic.recipes_db.items() if v == recipe), "None")
         
-        # Background
-        draw.rectangle(device.bounding_box, outline="white", fill="black")
+    asset_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+    card_path = os.path.join(asset_dir, f"Recipe_Card_{recipe_id}.png")
+    
+    if os.path.exists(card_path):
+        try:
+            # Paste the beautiful recipe card directly to the screen!
+            card = Image.open(card_path).convert("RGBA")
+            # The ILI9488 is 480x320. Resize the card to fit exactly!
+            card = card.resize((device.width, device.height), Image.Resampling.LANCZOS)
+            # Create a white background and composite
+            bg = Image.new("RGBA", (device.width, device.height), "white")
+            bg.paste(card, (0, 0), card)
+            img = bg.convert("RGB")
+            draw = ImageDraw.Draw(img)
+        except Exception as e:
+            print(f"[TFT] Error loading image: {e}")
+    else:
+        # Fallback dark background
+        draw.rectangle((0, 0, device.width, device.height), fill=(20, 20, 30))
+        draw.text((20, 20), f"ORDER: {recipe['name'] if recipe else 'NONE'}", fill="white", font=font_large)
+
+    # 2. Overlays based on State
+    if logic.state == "idle":
+        draw.rectangle((0, device.height//2 - 40, device.width, device.height//2 + 40), fill=(0, 0, 0))
+        draw.text((device.width//2 - 160, device.height//2 - 15), "WAITING FOR KEYCARD...", fill="yellow", font=font_med)
         
-        # State
-        state_text = f"STATE: {logic.state.upper()}"
-        draw.text((10, 10), state_text, fill="yellow", font=font)
+    elif logic.state == "showcase" or logic.state == "recipe_scanned":
+        draw.rectangle((0, device.height - 60, device.width, device.height), fill=(0, 100, 200))
+        draw.text((20, device.height - 45), "PRESS LID BUTTON TO START!", fill="white", font=font_med)
         
-        if logic.state == "playing":
-            # Timer
-            recipe = logic.active_recipe
-            
-            if recipe:
-                import time
-                time_limit = int(recipe.get("time_limit", 180))
-                elapsed = time.time() - logic.state_time
-                time_left = max(0, time_limit - elapsed)
-                
-                mins = int(time_left // 60)
-                secs = int(time_left % 60)
-                time_text = f"TIME: {mins:02d}:{secs:02d}"
-                draw.text((10, 40), time_text, fill="cyan", font=font)
-                
-                # Recipe
-                draw.text((10, 70), f"ORDER: {recipe['name']}", fill="white", font=font)
-                
-            # Completed ingredients
-            ready_count = len(logic.plate_contents)
-            total_count = len(recipe['ingredients']) if recipe else 0
-            draw.text((10, 100), f"PLATED: {ready_count}/{total_count}", fill="green", font=font)
-            
-        elif logic.state == "countdown":
-            import time
-            elapsed = time.time() - logic.state_time
-            count = max(1, 3 - int(elapsed))
-            draw.text((10, 50), f"GET READY!", fill="white", font=font)
-            draw.text((50, 150), str(count), fill="red", font=ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 100) if __import__("os").path.exists("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf") else font)
-            
-        elif logic.state == "win":
-            draw.text((10, 40), "YOU WIN!", fill="green", font=font)
-        elif logic.state == "lose":
-            draw.text((10, 40), "GAME OVER", fill="red", font=font)
+    elif logic.state == "countdown":
+        elapsed = time.time() - logic.state_time
+        count = max(1, 3 - int(elapsed))
+        
+        # Giant red countdown
+        try: font_giant = ImageFont.truetype(font_path, 150)
+        except: font_giant = font_large
+        
+        draw.rectangle((device.width//2 - 100, device.height//2 - 100, device.width//2 + 100, device.height//2 + 100), fill="white", outline="red", width=5)
+        draw.text((device.width//2 - 45, device.height//2 - 80), str(count), fill="red", font=font_giant)
+        
+    elif logic.state == "playing":
+        # Draw Timer Box Top Right
+        time_limit = int(recipe.get("time_limit", 180)) if recipe else 180
+        elapsed = time.time() - logic.state_time
+        time_left = max(0, time_limit - elapsed)
+        mins, secs = int(time_left // 60), int(time_left % 60)
+        
+        draw.rectangle((device.width - 150, 10, device.width - 10, 60), fill=(0, 0, 0), outline=(0, 255, 255), width=3)
+        draw.text((device.width - 135, 15), f"{mins:02d}:{secs:02d}", fill="cyan", font=font_large)
+        
+        # Draw Plated Progress Bottom Left
+        ready_count = len(logic.plate_contents)
+        total_count = len(recipe['ingredients']) if recipe else 0
+        
+        draw.rectangle((10, device.height - 50, 220, device.height - 10), fill=(0, 0, 0), outline=(0, 255, 0), width=3)
+        draw.text((20, device.height - 40), f"PLATED: {ready_count}/{total_count}", fill=(0, 255, 0), font=font_med)
+
+    elif logic.state == "win":
+        draw.rectangle((0, device.height//2 - 50, device.width, device.height//2 + 50), fill=(0, 200, 0))
+        draw.text((device.width//2 - 80, device.height//2 - 20), "YOU WIN!", fill="white", font=font_large)
+        
+    elif logic.state == "lose":
+        draw.rectangle((0, device.height//2 - 50, device.width, device.height//2 + 50), fill=(200, 0, 0))
+        draw.text((device.width//2 - 100, device.height//2 - 20), "GAME OVER", fill="white", font=font_large)
+
+    # Render image to screen!
+    device.display(img)
