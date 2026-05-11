@@ -62,19 +62,23 @@ class HardwareController:
             except Exception as e:
                 print(f"Error initializing Buttons: {e}")
 
-        # Initialize AS5600 via I2C (Bus 4 for GPIO 23/24)
-        self.i2c_bus_num = i2c_bus
+        # Initialize AS5600 via I2C (Trying Bus 4 then Bus 1)
         self.as5600_addr = 0x36
         self.bus = None
         if smbus2:
-            try:
-                self.bus = smbus2.SMBus(self.i2c_bus_num)
-                # Quick test
-                self.bus.read_byte(self.as5600_addr)
-                print(f"AS5600 initialized on I2C bus {self.i2c_bus_num}")
-            except Exception as e:
-                print(f"Error initializing AS5600 on bus {self.i2c_bus_num}: {e}")
-                self.bus = None
+            for bus_num in [4, 1]:
+                try:
+                    self.bus = smbus2.SMBus(bus_num)
+                    self.bus.read_byte(self.as5600_addr)
+                    self.i2c_bus_num = bus_num
+                    print(f"✅ AS5600 found and initialized on I2C bus {bus_num}")
+                    break
+                except Exception:
+                    if self.bus: self.bus.close()
+                    self.bus = None
+            
+            if self.bus is None:
+                print(f"❌ AS5600 NOT found on Bus 1 or 4 at {hex(self.as5600_addr)}")
 
         # Tracking state
         self.spins = 0
