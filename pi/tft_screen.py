@@ -16,13 +16,10 @@ def setup_tft():
     """
     print("[TFT] Initializing ILI9488 on SPI0...")
     try:
-        # port=0, device=0 automatically binds CS to GPIO 8
+        # port=0, device=0 uses hardware SPI (kernel handles SCLK, MOSI, and CS)
         serial_iface = spi(
             port=0, 
             device=0, 
-            gpio_SCLK=11,
-            gpio_MOSI=10,
-            gpio_CS=8,
             gpio_DC=22, 
             gpio_RST=27, 
             bus_speed_hz=8000000
