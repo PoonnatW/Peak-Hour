@@ -45,12 +45,14 @@ class HardwareController:
             except Exception as e:
                 print(f"⚠️ Base Neopixel fail: {e}")
 
-            # Try Lid Strip (Pin 8)
+            # Try Lid Strip (Pin 28)
             try:
                 import busio
-                spi3 = busio.SPI(board.D15, board.D14)
-                self.lid_pixels = neopixel_spi.NeoPixel_SPI(spi3, 10, auto_write=False)
-                print("✅ Lid Neopixels initialized (Pin 8)")
+                # SPI2 on GPIO 1 (Physical Pin 28) for Lid
+                # SCLK=GPIO 0 (Pin 27), MOSI=GPIO 1 (Pin 28)
+                spi2 = busio.SPI(board.D0, board.D1)
+                self.lid_pixels = neopixel_spi.NeoPixel_SPI(spi2, 10, auto_write=False)
+                print("✅ Lid Neopixels initialized (Pin 28)")
             except Exception as e:
                 print(f"⚠️ Lid Neopixel fail: {e} (Check SPI3 overlay)")
 
