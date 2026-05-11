@@ -3,8 +3,8 @@ STATIONS = {
     1: "Vegetable Washer",
     2: "Plate", 3: "Plate", 4: "Plate", 5: "Plate",
     6: "Plate", 7: "Plate", 8: "Plate",
-    9: "Frying Pan", 10: "Frying Pan",
-    11: "Deep Fryer", 12: "Deep Fryer",
+    9: "Frying Pan 1", 10: "Frying Pan 2",
+    11: "Deep Fryer 1", 12: "Deep Fryer 2",
 }
 
 LEDS = {
