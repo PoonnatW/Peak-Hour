@@ -41,8 +41,7 @@ class HardwareController:
                 # Explicitly using GPIO pins to avoid Blinka mapping issues on Pi 5
                 spi1 = busio.SPI(board.D21, board.D20) 
                 # Chained 20 pixels (10 Base + 10 Lid)
-                # Explicitly set bitrate to 6.4MHz for reliable NeoPixel timing
-                self.pixels = neopixel_spi.NeoPixel_SPI(spi1, 20, bitrate=6400000, auto_write=True)
+                self.pixels = neopixel_spi.NeoPixel_SPI(spi1, 20, auto_write=True)
                 print("✅ NeoPixels initialized (Chained on SPI1/GPIO20)")
             except Exception as e:
                 print(f"⚠️ NeoPixel fail: {e}")
