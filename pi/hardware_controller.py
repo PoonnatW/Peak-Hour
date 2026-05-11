@@ -33,21 +33,26 @@ class HardwareController:
     - AS5600: I2C Bus 4 (SDA 23, SCL 24)
     """
     def __init__(self, i2c_bus=4):
-        # Initialize Neopixels (SPI Mode for Pi 5)
-        self.pixels = None
+        # Initialize Neopixels (Dual SPI Mode for Pi 5)
+        self.base_pixels = None
+        self.lid_pixels = None
         if neopixel and board:
             try:
                 import neopixel_spi
-                # SPI1 on GPIO 20 (Physical Pin 38)
-                spi = board.SPI() # This defaults to SPI0, let's specify SPI1
-                # On Pi 5, we use the secondary SPI bus to avoid screen conflict
                 import busio
-                spi1 = busio.SPI(board.SCK_1, board.MOSI_1) 
-                self.pixels = neopixel_spi.NeoPixel_SPI(spi1, 20, auto_write=False)
-                print("Neopixels initialized via SPI1 (GPIO 20 / Pin 38)")
+                # SPI1 on GPIO 20 (Physical Pin 38) for Base
+                spi1 = busio.SPI(board.SCK_1, board.MOSI_1)
+                self.base_pixels = neopixel_spi.NeoPixel_SPI(spi1, 10, auto_write=False)
+                
+                # SPI3 on GPIO 14 (Physical Pin 8) for Lid
+                # We need to specify the pins for SPI3
+                spi3 = busio.SPI(board.D15, board.D14) # SCK=15, MOSI=14
+                self.lid_pixels = neopixel_spi.NeoPixel_SPI(spi3, 10, auto_write=False)
+                
+                print("Neopixels initialized: Base (Pin 38), Lid (Pin 8)")
             except Exception as e:
-                print(f"Error initializing SPI Neopixels: {e}")
-                print("Try: sudo pip3 install adafruit-circuitpython-neopixel-spi --break-system-packages")
+                print(f"Error initializing Dual SPI Neopixels: {e}")
+                print("Ensure 'dtoverlay=spi1-1cs' AND 'dtoverlay=spi3-1cs' are in config.txt")
 
         # Initialize Buttons
         self.base_btn = None
@@ -115,28 +120,18 @@ class HardwareController:
             self.last_angle = angle
 
     def set_led_color(self, index, color, target="base"):
-        if not self.pixels: return
-        
-        # Map indices: Base starts at 0, Lid starts at 10
-        final_idx = index
-        if target == "lid":
-            final_idx = index + 10
-            
-        if 0 <= final_idx < 20:
-            self.pixels[final_idx] = color
-            self.pixels.show()
+        pixels = self.base_pixels if target == "base" else self.lid_pixels
+        if pixels and 0 <= index < 10:
+            pixels[index] = color
+            pixels.show()
             
     def fill_leds(self, color, target="all"):
-        if not self.pixels: return
-        
-        if target == "base":
-            for i in range(10): self.pixels[i] = color
-        elif target == "lid":
-            for i in range(10, 20): self.pixels[i] = color
-        else: # "all"
-            self.pixels.fill(color)
-            
-        self.pixels.show()
+        if target in ["base", "all"] and self.base_pixels:
+            self.base_pixels.fill(color)
+            self.base_pixels.show()
+        if target in ["lid", "all"] and self.lid_pixels:
+            self.lid_pixels.fill(color)
+            self.lid_pixels.show()
             
     def clear_leds(self):
         self.fill_leds((0, 0, 0), "all")
