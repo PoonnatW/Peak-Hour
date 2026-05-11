@@ -1,19 +1,25 @@
 import time
 import signal
 import sys
+
+# Initialize TFT Screen FIRST to avoid GPIO allocation conflicts on Pi 5
+try:
+    from tft_screen import setup_tft, draw_game_state
+    tft_device = setup_tft()
+except Exception as e:
+    print(f"Warning: TFT Setup failed early: {e}")
+    tft_device = None
+
 from gpiozero import Button
 
 from serial_handler import SerialHandler
 from game_logic import GameLogic
 from display import DisplayService
 from hardware_controller import HardwareController
-from tft_screen import setup_tft, draw_game_state
 
 def main():
     print("Starting Peak Hour Game Controller...")
-    
     display = DisplayService()
-    tft_device = setup_tft()
     
     # Init serial handler
     serial_handler = SerialHandler(baudrate=115200)
