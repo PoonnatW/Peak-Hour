@@ -76,6 +76,13 @@ def draw_game_state(device, logic):
             total_count = len(recipe['ingredients']) if recipe else 0
             draw.text((10, 100), f"PLATED: {ready_count}/{total_count}", fill="green", font=font)
             
+        elif logic.state == "countdown":
+            import time
+            elapsed = time.time() - logic.state_time
+            count = max(1, 3 - int(elapsed))
+            draw.text((10, 50), f"GET READY!", fill="white", font=font)
+            draw.text((50, 150), str(count), fill="red", font=ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 100) if __import__("os").path.exists("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf") else font)
+            
         elif logic.state == "win":
             draw.text((10, 40), "YOU WIN!", fill="green", font=font)
         elif logic.state == "lose":
