@@ -131,19 +131,33 @@ class HardwareController:
 
 if __name__ == "__main__":
     # Simple test script
-    print("Testing Hardware Controller...")
+    import time
+    print("PEAK HOUR | HARDWARE TEST SUITE")
     print("--------------------------------")
     hw = HardwareController()
+    
+    # 1. Test Neopixels
+    print("Step 1: Testing Neopixel Strips (Base & Lid)...")
+    test_colors = [(255, 0, 0), (255, 255, 0), (0, 255, 0)] # Red, Yellow, Green
+    for color in test_colors:
+        hw.fill_leds(color, "all")
+        time.sleep(0.5)
+    hw.clear_leds()
+    print("LED Test Complete.")
+
+    # 2. Setup Button Callbacks
     hw.set_button_callbacks(
-        base_cb=lambda: print("[EVENT] Base Button (GPIO 6) Pressed!"),
-        lid_cb=lambda: print("[EVENT] Lid Button (GPIO 5) Pressed!")
+        base_cb=lambda: print("\n[EVENT] Base Button (GPIO 6) Pressed!"),
+        lid_cb=lambda: print("\n[EVENT] Lid Button (GPIO 5) Pressed!")
     )
 
     if hw.bus is None:
         print("WARNING: AS5600 not connected. Check I2C settings and reboot.")
 
     try:
-        print("Polling sensors... (Press Ctrl+C to stop)")
+        print("\nStep 2: Monitoring Sensors & Buttons...")
+        print("(Rotate Magnet for Spins | Press Buttons for Events)")
+        print("(Press Ctrl+C to exit)")
         while True:
             hw.update()
             angle = hw.read_as5600_angle()
