@@ -2,6 +2,7 @@ from luma.core.interface.serial import spi
 from luma.lcd.device import ili9488
 from luma.core.render import canvas
 from PIL import ImageFont
+import config
 
 # --- REAL PINOUT ---
 # TFT RESET: GPIO 27
@@ -114,15 +115,55 @@ def draw_game_state(device, logic):
         time_left = max(0, time_limit - elapsed)
         mins, secs = int(time_left // 60), int(time_left % 60)
         
-        draw.rectangle((device.width - 150, 10, device.width - 10, 60), fill=(0, 0, 0), outline=(0, 255, 255), width=3)
-        draw.text((device.width - 135, 15), f"{mins:02d}:{secs:02d}", fill="cyan", font=font_large)
+        draw.rectangle((device.width - 120, 10, device.width - 10, 50), fill=(0, 0, 0), outline=(0, 255, 255), width=2)
+        draw.text((device.width - 110, 15), f"{mins:02d}:{secs:02d}", fill="cyan", font=font_med)
         
-        # Draw Plated Progress Bottom Left
-        ready_count = len(logic.plate_contents)
-        total_count = len(recipe['ingredients']) if recipe else 0
+        # --- Ingredient Status List ---
+        # Draw a translucent panel at the bottom for ingredients
+        panel_h = 80
+        draw.rectangle((0, device.height - panel_h, device.width, device.height), fill=(0, 0, 0, 180))
         
-        draw.rectangle((10, device.height - 50, 220, device.height - 10), fill=(0, 0, 0), outline=(0, 255, 0), width=3)
-        draw.text((20, device.height - 40), f"PLATED: {ready_count}/{total_count}", fill=(0, 255, 0), font=font_med)
+        required = [ing for ing in recipe["ingredients"] if ing.strip()] if recipe else []
+        
+        # Get all pieces to find matches
+        all_pieces = list(logic.plate_contents.values())
+        for content in logic.station_contents.values():
+            if isinstance(content, list): all_pieces.extend(content)
+            else: all_pieces.append(content)
+        
+        available_pieces = all_pieces[:]
+        plated_uids = [p.uid for p in logic.plate_contents.values()]
+        
+        for i, ing_name in enumerate(required):
+            x = 10 + i * (device.width // len(required)) if len(required) > 0 else 10
+            y = device.height - panel_h + 5
+            
+            match = None
+            for p in available_pieces:
+                if p.name == ing_name:
+                    match = p
+                    available_pieces.remove(p)
+                    break
+            
+            is_plated = match and match.uid in plated_uids
+            color = (0, 255, 0) if is_plated else "white"
+            
+            # Draw name
+            short_name = ing_name[:8] # Truncate for TFT
+            draw.text((x, y), short_name, fill=color, font=font_med)
+            
+            # Draw progress
+            if is_plated:
+                draw.text((x, y + 25), "PLATED", fill=(0, 255, 0), font=font_med)
+            elif match:
+                reqs = config.THRESHOLDS.get(ing_name, {})
+                status = ""
+                if reqs.get("spins", 0) > 0: status += f"S:{match.operations['spins']}/{reqs['spins']} "
+                if reqs.get("tosses", 0) > 0: status += f"T:{match.operations['tosses']}/{reqs['tosses']} "
+                if reqs.get("presses", 0) > 0: status += f"F:{match.operations['presses']}/{reqs['presses']} "
+                draw.text((x, y + 25), status.strip(), fill="yellow", font=font_med)
+            else:
+                draw.text((x, y + 25), "MISSING", fill="red", font=font_med)
 
     elif logic.state == "win":
         draw.rectangle((0, device.height//2 - 50, device.width, device.height//2 + 50), fill=(0, 200, 0))

@@ -1,18 +1,28 @@
 STATIONS = {
-    0: "Recipe Card",
-    1: "Vegetable Washer",
-    2: "Plate", 3: "Plate", 4: "Plate", 5: "Plate",
-    6: "Plate", 7: "Plate", 8: "Plate",
-    9: "Frying Pan 1", 10: "Frying Pan 2",
-    11: "Deep Fryer 1", 12: "Deep Fryer 2",
+    # Board 1
+    0: "Plate 7",
+    1: "Plate 6",
+    2: "Plate 5",
+    3: "Deep Fryer 2",
+    4: "Deep Fryer 1",
+    5: "Frying Pan 1",
+    
+    # Board 2
+    9: "Frying Pan 2",
+    10: "Recipe Card",
+    11: "Plate 1",
+    12: "Plate 2",
+    13: "Plate 3",
+    14: "Plate 4",
+    15: "Vegetable Washer",
 }
 
 LEDS = {
-    "Vegetable Washer": 0,
-    "Frying Pan 1": 1,
-    "Frying Pan 2": 2,
-    "Deep Fryer 1": 3,
-    "Deep Fryer 2": 4
+    "Vegetable Washer": 0, # Usually on Lid
+    "Frying Pan 1": 0,     # Base Light 1
+    "Frying Pan 2": 1,     # Base Light 2
+    "Deep Fryer 1": 2,     # Placeholder
+    "Deep Fryer 2": 3      # Placeholder
 }
 
 # Values for ice cream station analog matching

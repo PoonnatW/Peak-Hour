@@ -73,7 +73,12 @@ class GameLogic:
                     }
 
     def process_message(self, msg_type, msg_id, value):
-        # msg_id might be string, try handle as int if possible
+        # The real hardware might send IDs like "1-6" or "1:0", focus on the first number
+        if isinstance(msg_id, str):
+            # Split by common separators and take the first part
+            msg_id = msg_id.split('-')[0].split(',')[0].split(':')[0].strip()
+
+        # Try to convert to int for easier dictionary lookup
         try:
             reader_id = int(msg_id)
         except ValueError:
@@ -83,6 +88,13 @@ class GameLogic:
             self.set_recipe(value)
             
         elif msg_type == "RFID":
+            # Check if this is the dedicated Recipe Card sensor
+            station_name = config.STATIONS.get(reader_id, "Unknown")
+            if station_name == "Recipe Card":
+                print(f"[LOGIC] Recipe Card scanned at ID {reader_id}: {value}")
+                self.set_recipe(value)
+                return
+
             # Tag arrived at a station or plate
             if value in self.pieces_db:
                 piece_name = self.pieces_db[value]
@@ -104,15 +116,31 @@ class GameLogic:
                     self.last_rfid_seen[reader_id][value] = now
                 # ----------------------------------
 
-                # If reader is 2-8 it's a plate
-                if isinstance(reader_id, int) and 2 <= reader_id <= 8:
+                # --- MOVE LOGIC ---
+                # Remove piece from any current location before assigning to new one
+                self._remove_piece_from_all_locations(piece)
+
+                station_name = config.STATIONS.get(reader_id, "Unknown")
+
+                # If station name contains "Plate"
+                if "Plate" in station_name:
                     self.plate_contents[reader_id] = piece
-                    piece.location = f"Plate {reader_id}"
+                    piece.location = station_name
+                    print(f"[LOGIC] {piece.name} moved to {station_name} (ID: {reader_id})")
+                
                 # If reader is in stations
                 elif reader_id in config.STATIONS:
-                    station_name = config.STATIONS[reader_id]
-                    self.station_contents[station_name] = piece
+                    # Stations can hold lists (for auto-population/multiple items)
+                    if station_name not in self.station_contents:
+                        self.station_contents[station_name] = []
+                    
+                    # Ensure it's a list
+                    if not isinstance(self.station_contents[station_name], list):
+                        self.station_contents[station_name] = [self.station_contents[station_name]]
+                    
+                    self.station_contents[station_name].append(piece)
                     piece.location = station_name
+                    print(f"[LOGIC] {piece.name} moved to {station_name}")
                     
         elif msg_type == "SPIN":
             # SPINS happen at Vegetable Washer
@@ -145,13 +173,38 @@ class GameLogic:
                 
     def _get_or_create_piece(self, uid, name):
         # Look for existing piece to maintain doneness state
-        for piece in self.station_contents.values():
-            if piece.uid == uid:
-                return piece
+        # Check stations (handling potential lists)
+        for content in self.station_contents.values():
+            if isinstance(content, list):
+                for p in content:
+                    if p.uid == uid: return p
+            elif content and content.uid == uid:
+                return content
+        
+        # Check plates
         for piece in self.plate_contents.values():
             if piece.uid == uid:
                 return piece
+        
         return GamePiece(uid, name)
+
+    def _remove_piece_from_all_locations(self, piece):
+        """Removes a piece from all station_contents and plate_contents."""
+        # Remove from stations
+        for station_name in list(self.station_contents.keys()):
+            content = self.station_contents[station_name]
+            if isinstance(content, list):
+                if piece in content:
+                    content.remove(piece)
+                if not content:
+                    del self.station_contents[station_name]
+            elif content == piece:
+                del self.station_contents[station_name]
+        
+        # Remove from plates
+        for plate_id in list(self.plate_contents.keys()):
+            if self.plate_contents[plate_id] == piece:
+                del self.plate_contents[plate_id]
 
     def _handle_operation(self, station_name, op_type):
         # Get all pieces at this station (handling multiple pieces if needed)
@@ -331,6 +384,8 @@ class GameLogic:
             
             # Map them for display
             available_pieces = all_pieces[:]
+            plated_uids = [p.uid for p in self.plate_contents.values()]
+
             for ing_name in required:
                 if not ing_name.strip(): continue
                 
@@ -347,6 +402,7 @@ class GameLogic:
                 if match:
                     piece_data.append({
                         "name": match.name,
+                        "plated": match.uid in plated_uids,
                         "spins": match.operations["spins"],
                         "spins_req": reqs.get("spins", 0),
                         "tosses": match.operations["tosses"],
@@ -357,6 +413,7 @@ class GameLogic:
                 else:
                     piece_data.append({
                         "name": ing_name, 
+                        "plated": False,
                         "spins": 0, "spins_req": reqs.get("spins", 0),
                         "tosses": 0, "tosses_req": reqs.get("tosses", 0),
                         "presses": 0, "presses_req": reqs.get("presses", 0)
@@ -378,13 +435,17 @@ class GameLogic:
         # Ignore empty ingredient requirement if recipe is just a stub
         required = [ing for ing in self.active_recipe["ingredients"] if ing.strip()]
         
-        # Check plate contents AND station contents (for manual testing)
+        # STRICT PLATE CHECK: Only check plate contents for final submission
         all_available_pieces = list(self.plate_contents.values())
+        
+        # Check for items left at stations (they won't count)
+        items_at_stations = []
         for content in self.station_contents.values():
-            if isinstance(content, list):
-                all_available_pieces.extend(content)
-            else:
-                all_available_pieces.append(content)
+            if isinstance(content, list): items_at_stations.extend([p.name for p in content])
+            else: items_at_stations.append(content.name)
+        
+        if items_at_stations:
+            print(f"[LOGIC] Note: Ingredients {items_at_stations} are still at stations and NOT on plates.")
         
         for piece in all_available_pieces:
             if piece.name in required:

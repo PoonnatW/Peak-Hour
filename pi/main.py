@@ -70,11 +70,11 @@ def main():
                         logic.lid_button_pressed()
                     elif logic.state == "playing":
                         if display.btn_spin.collidepoint(pos):
-                            logic.process_message("SPIN", "1", "1") # ID 1 = Vegetable Washer
+                            logic.process_message("SPIN", "15", "1") # ID 15 = Vegetable Washer
                         elif display.btn_toss.collidepoint(pos):
-                            logic.process_message("TOSS", "9", "1") # ID 9 = Frying Pan
+                            logic.process_message("TOSS", "5", "1")  # ID 5 = Frying Pan 1 (ID 9 is Pan 2)
                         elif display.btn_press.collidepoint(pos):
-                            logic.process_message("BTN", "0", "1")  # ID 0 = Deep Fryer
+                            logic.process_message("BTN", "4", "1")   # ID 4 = Deep Fryer 1
                         elif display.btn_bell.collidepoint(pos):
                             logic.process_message("BELL", "0", "1")
                 
@@ -83,9 +83,9 @@ def main():
                     if logic.state == "showcase":
                         if event.key == pygame.K_RETURN: logic.lid_button_pressed()
                     elif logic.state == "playing":
-                        if event.key == pygame.K_s: logic.process_message("SPIN", "1", "1")
-                        elif event.key == pygame.K_t: logic.process_message("TOSS", "9", "1")
-                        elif event.key == pygame.K_p: logic.process_message("BTN", "0", "1")
+                        if event.key == pygame.K_s: logic.process_message("SPIN", "15", "1")
+                        elif event.key == pygame.K_t: logic.process_message("TOSS", "5", "1")
+                        elif event.key == pygame.K_p: logic.process_message("BTN", "4", "1")
                         elif event.key == pygame.K_b: logic.process_message("BELL", "0", "1")
                 
                 if event.type == pygame.QUIT:

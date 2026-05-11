@@ -186,6 +186,11 @@ class DisplayService:
         for i, piece in enumerate(self.piece_data):
             ing = piece['name']
             x_pos = 60 + i * 110
+            
+            # Draw a border if plated
+            if piece.get('plated', False):
+                pygame.draw.rect(self.screen, self.CLR_SUCCESS, (x_pos - 45, 25, 90, 70), width=3, border_radius=5)
+            
             if ing in self.assets:
                 small = pygame.transform.smoothscale(self.assets[ing], (50, 50))
                 self.screen.blit(small, (x_pos - 25, 30))
@@ -197,7 +202,10 @@ class DisplayService:
             if piece['presses_req'] > 0: ops.append(f"F:{piece['presses']}/{piece['presses_req']}")
             
             status_str = " ".join(ops) if ops else "READY"
-            self.render_text(status_str, 90, x=x_pos, size="sub", color=self.CLR_TEXT)
+            if piece.get('plated', False): status_str = "PLATED"
+            
+            color = self.CLR_SUCCESS if piece.get('plated', False) else self.CLR_TEXT
+            self.render_text(status_str, 90, x=x_pos, size="sub", color=color)
 
         # Bottom Bar
         bar_rect = pygame.Rect(0, self.height - 100, self.width, 100)

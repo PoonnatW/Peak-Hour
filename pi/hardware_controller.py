@@ -32,27 +32,17 @@ class HardwareController:
     - AS5600: I2C Bus 4 (SDA 23, SCL 24)
     """
     def __init__(self, i2c_bus=4):
-        # Initialize Neopixels (Dual SPI Mode for Oscilloscope Test)
-        self.base_pixels = None
-        self.lid_pixels = None
+        # Initialize Neopixels (Chained SPI Mode)
+        self.pixels = None
         if neopixel_spi and board:
-            # Base (SPI 1 on Pin 38)
             try:
-                import busio
+                # SPI 1 on Pin 38 / GPIO 20
                 spi1 = busio.SPI(board.SCK_1, board.MOSI_1)
-                self.base_pixels = neopixel_spi.NeoPixel_SPI(spi1, 10, auto_write=False)
-                print("✅ Base initialized (Pin 38)")
+                # Chained 20 pixels (10 Base + 10 Lid)
+                self.pixels = neopixel_spi.NeoPixel_SPI(spi1, 20, auto_write=False)
+                print("✅ NeoPixels initialized (Chained on Pin 38)")
             except Exception as e:
-                print(f"⚠️ Base fail: {e}")
-
-            # Lid (SPI 5 on Pin 8)
-            try:
-                import busio
-                spi5 = busio.SPI(board.D15, board.D14)
-                self.lid_pixels = neopixel_spi.NeoPixel_SPI(spi5, 10, auto_write=False)
-                print("✅ Lid initialized (Pin 8)")
-            except Exception as e:
-                print(f"⚠️ Lid fail: {e}")
+                print(f"⚠️ NeoPixel fail: {e}")
 
         # Initialize Buttons
         self.base_btn = None
@@ -120,18 +110,31 @@ class HardwareController:
             self.last_angle = angle
 
     def set_led_color(self, index, color, target="base"):
-        pixels = self.base_pixels if target == "base" else self.lid_pixels
-        if pixels and 0 <= index < 10:
-            pixels[index] = color
-            pixels.show()
+        if not self.pixels: return
+        
+        # Calculate final index based on chain
+        # Base = 0-9, Lid = 10-19
+        final_idx = index
+        if target == "lid":
+            final_idx += 10
+            
+        if 0 <= final_idx < 20:
+            self.pixels[final_idx] = color
+            self.pixels.show()
             
     def fill_leds(self, color, target="all"):
-        if target in ["base", "all"] and self.base_pixels:
-            self.base_pixels.fill(color)
-            self.base_pixels.show()
-        if target in ["lid", "all"] and self.lid_pixels:
-            self.lid_pixels.fill(color)
-            self.lid_pixels.show()
+        if not self.pixels: return
+        
+        if target == "all":
+            self.pixels.fill(color)
+        elif target == "base":
+            for i in range(0, 10):
+                self.pixels[i] = color
+        elif target == "lid":
+            for i in range(10, 20):
+                self.pixels[i] = color
+                
+        self.pixels.show()
             
     def clear_leds(self):
         self.fill_leds((0, 0, 0), "all")

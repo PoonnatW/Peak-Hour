@@ -47,10 +47,12 @@ class SerialHandler:
                 time.sleep(0.5)
                 
     def _parse_and_dispatch(self, line):
-        # Format: TYPE:ID:VALUE
+        # Format: TYPE:ID:VALUE (but hardware might send TYPE:ID:EXTRA:VALUE)
         parts = line.split(":")
-        if len(parts) == 3:
-            msg_type, msg_id, value = parts
+        if len(parts) >= 3:
+            msg_type = parts[0]
+            msg_id = parts[1]
+            value = parts[-1] # Assume the actual value is always at the end
             if self.callback:
                 self.callback(msg_type, msg_id, value)
         else:
