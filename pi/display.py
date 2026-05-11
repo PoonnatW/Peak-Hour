@@ -144,6 +144,19 @@ class DisplayService:
         color = self.COLOR_RED if remaining < 60 else self.COLOR_BLACK
         self.render_text(time_str, self.height // 2, size="title", color=color)
         
+        # Show mini ingredient icons at the top
+        icon_size = 50
+        for i, ing in enumerate(self.ingredients):
+            x = 30 + i * (icon_size + 10)
+            y = 10
+            if ing in self.assets:
+                # Draw small version of asset
+                small_img = pygame.transform.smoothscale(self.assets[ing], (icon_size, icon_size))
+                self.screen.blit(small_img, (x, y))
+            else:
+                # Draw placeholder text if image missing
+                self.render_text(ing[:3], y + icon_size//2, x + icon_size//2, size="sub")
+        
         # Active recipe at bottom
         pygame.draw.rect(self.screen, self.COLOR_BLACK, (0, self.height - 40, self.width, 40))
         self.render_text(f"Recipe: {self.current_recipe}", self.height - 20, color=self.COLOR_WHITE, size="sub")
