@@ -47,6 +47,7 @@ def main():
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     pos = pygame.mouse.get_pos()
+                    print(f"[DEBUG] Click at {pos}")
                     if logic.state == "idle":
                         if display.debug_btn_rect.collidepoint(pos):
                             print("[DEBUG] Manual Start Clicked")
