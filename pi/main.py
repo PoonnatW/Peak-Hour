@@ -53,7 +53,7 @@ def main():
                             logic.process_message("RCPE", "0", "0000")
                     elif logic.state == "playing":
                         if display.btn_spin.collidepoint(pos):
-                        logic.process_message("SPIN", "1", "1") # ID 1 = Vegetable Washer
+                            logic.process_message("SPIN", "1", "1") # ID 1 = Vegetable Washer
                     elif display.btn_toss.collidepoint(pos):
                         logic.process_message("TOSS", "9", "1") # ID 9 = Frying Pan
                     elif display.btn_press.collidepoint(pos):
