@@ -19,14 +19,11 @@ def main():
     # Init hardware
     hardware = HardwareController()
     
-    # Init game logic
+    # Init game logic (handles hardware button callbacks)
     logic = GameLogic(serial_handler, display, hardware)
     
     # Wire serial callback to logic.process_message
     serial_handler.start_listening(logic.process_message)
-    
-    # Setup hardware button from controller
-    hardware.set_button_callback(logic.hardware_button_pressed)
     
     # Setup physical buttons based on docs/pinout.md
     # Reset = GPIO 4 (Moved from 22 due to TFT conflict)

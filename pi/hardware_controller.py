@@ -21,100 +21,113 @@ except ImportError:
 
 class HardwareController:
     """
-    A controller for interacting with Neopixel LEDs, a button, and an AS5600 sensor via I2C on Raspberry Pi.
+    A controller for interacting with Base/Lid Neopixels, Buttons, and AS5600 sensor.
+    Pins: 
+    - Base Neopixel: GPIO 13
+    - Lid Neopixel: GPIO 18
+    - Base Button: GPIO 6
+    - Lid Button: GPIO 5
+    - AS5600: I2C Bus 4 (SDA 23, SCL 24)
     """
-    def __init__(self, led_pin=None, num_pixels=10, button_pin=23, i2c_bus=1):
-        # Initialize Neopixel
-        self.num_pixels = num_pixels
-        self.pixels = None
+    def __init__(self, i2c_bus=4):
+        # Initialize Neopixels
+        self.base_pixels = None
+        self.lid_pixels = None
         if neopixel and board:
-            led_pin = led_pin or board.D18
             try:
-                self.pixels = neopixel.NeoPixel(led_pin, self.num_pixels, auto_write=False)
-                print(f"Neopixel initialized on pin {led_pin} with {num_pixels} pixels.")
+                self.base_pixels = neopixel.NeoPixel(board.D13, 10, auto_write=False)
+                self.lid_pixels = neopixel.NeoPixel(board.D18, 10, auto_write=False)
+                print("Neopixels initialized: Base (GPIO 13), Lid (GPIO 18)")
             except Exception as e:
-                print(f"Error initializing Neopixel: {e}")
+                print(f"Error initializing Neopixels: {e}")
 
-        # Initialize Button
-        self.button = None
-        self.btn_callback = None
+        # Initialize Buttons
+        self.base_btn = None
+        self.lid_btn = None
+        self.base_callback = None
+        self.lid_callback = None
         if Button:
             try:
-                self.button = Button(button_pin, pull_up=True, bounce_time=0.1)
-                self.button.when_pressed = self._button_handler
-                print(f"Button initialized on GPIO {button_pin}.")
+                self.base_btn = Button(6, pull_up=True, bounce_time=0.1)
+                self.lid_btn = Button(5, pull_up=True, bounce_time=0.1)
+                self.base_btn.when_pressed = self._base_handler
+                self.lid_btn.when_pressed = self._lid_handler
+                print("Buttons initialized: Base (GPIO 6), Lid (GPIO 5)")
             except Exception as e:
-                print(f"Error initializing Button on GPIO {button_pin}: {e}")
+                print(f"Error initializing Buttons: {e}")
 
-        # Initialize AS5600 via I2C
+        # Initialize AS5600 via I2C (Bus 4 for GPIO 23/24)
         self.i2c_bus_num = i2c_bus
         self.as5600_addr = 0x36
         self.bus = None
         if smbus2:
             try:
                 self.bus = smbus2.SMBus(self.i2c_bus_num)
-                # Quick test to see if device is present
+                # Quick test
                 self.bus.read_byte(self.as5600_addr)
-                print(f"AS5600 initialized on I2C bus {self.i2c_bus_num} at address {hex(self.as5600_addr)}.")
+                print(f"AS5600 initialized on I2C bus {self.i2c_bus_num}")
             except Exception as e:
-                print(f"Error initializing I2C for AS5600 (check wiring and if I2C is enabled): {e}")
+                print(f"Error initializing AS5600 on bus {self.i2c_bus_num}: {e}")
                 self.bus = None
 
         # Tracking state
         self.spins = 0
         self.last_angle = None
+        self.cumulative_angle = 0 # Track total movement for full rotations
 
-    def _button_handler(self):
-        print("[HARDWARE] Physical Button (GPIO 23) Pressed!")
-        if self.btn_callback:
-            self.btn_callback()
+    def _base_handler(self):
+        print("[HARDWARE] Base Button (GPIO 6) Pressed!")
+        if self.base_callback: self.base_callback()
 
-    def set_button_callback(self, callback):
-        """Set a callback function for when the button is pressed."""
-        self.btn_callback = callback
+    def _lid_handler(self):
+        print("[HARDWARE] Lid Button (GPIO 5) Pressed!")
+        if self.lid_callback: self.lid_callback()
+
+    def set_button_callbacks(self, base_cb=None, lid_cb=None):
+        self.base_callback = base_cb
+        self.lid_callback = lid_cb
 
     def update(self):
         """Poll sensors. Called by the main loop."""
-        # Check AS5600 for spins
         angle = self.read_as5600_angle()
         if angle is not None:
             if self.last_angle is not None:
-                diff = abs(angle - self.last_angle)
-                if diff > 500: # Threshold for a spin
-                    print(f"[HARDWARE] AS5600 Spin Detected: {angle}")
+                diff = angle - self.last_angle
+                if diff > 2048: diff -= 4096
+                elif diff < -2048: diff += 4096
+                
+                self.cumulative_angle += diff
+                
+                if abs(self.cumulative_angle) >= 4096:
+                    print(f"[HARDWARE] Full Spin Detected! (Cumulative: {self.cumulative_angle})")
                     self.spins += 1
+                    if self.cumulative_angle > 0: self.cumulative_angle -= 4096
+                    else: self.cumulative_angle += 4096
             self.last_angle = angle
 
-    # --- Neopixel Methods ---
-    def set_led_color(self, index, color):
-        if self.pixels and 0 <= index < self.num_pixels:
-            self.pixels[index] = color
-            self.pixels.show()
+    def set_led_color(self, index, color, target="base"):
+        pixels = self.base_pixels if target == "base" else self.lid_pixels
+        if pixels and 0 <= index < pixels.n:
+            pixels[index] = color
+            pixels.show()
             
-    def fill_leds(self, color):
-        if self.pixels:
-            self.pixels.fill(color)
-            self.pixels.show()
+    def fill_leds(self, color, target="all"):
+        if target in ["base", "all"] and self.base_pixels:
+            self.base_pixels.fill(color)
+            self.base_pixels.show()
+        if target in ["lid", "all"] and self.lid_pixels:
+            self.lid_pixels.fill(color)
+            self.lid_pixels.show()
             
     def clear_leds(self):
-        self.fill_leds((0, 0, 0))
+        self.fill_leds((0, 0, 0), "all")
 
-    # --- Button Methods ---
-    def get_button_state(self):
-        if self.button:
-            return self.button.is_active
-        return False
-
-    # --- AS5600 Methods ---
     def read_as5600_angle(self):
-        if self.bus is None:
-            return None
+        if self.bus is None: return None
         try:
             data = self.bus.read_i2c_block_data(self.as5600_addr, 0x0E, 2)
-            angle = (data[0] << 8) | data[1]
-            return angle
-        except Exception as e:
-            return None
+            return (data[0] << 8) | data[1]
+        except: return None
 
 if __name__ == "__main__":
     # Simple test script
