@@ -246,9 +246,8 @@ class GameLogic:
                 self._handle_operation(station, "presses")
 
     def lid_button_pressed(self):
-        # Lid Button (GPIO 5) -> Could be used for washer or secondary tasks
-        if "Vegetable Washer" in self.station_contents:
-            self._handle_operation("Vegetable Washer", "spins") # Lid closure counts as a spin?
+        # Lid Button (GPIO 5) - Reserved for future use (e.g., checking if lid is closed)
+        print("[LOGIC] Lid Button Pressed (GPIO 5)")
 
     def update(self):
         # Update AS5600 for Vegetable Washer via hardware controller
