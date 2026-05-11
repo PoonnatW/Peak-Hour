@@ -133,9 +133,19 @@ class GameLogic:
         return GamePiece(uid, name)
 
     def _handle_operation(self, station_name, op_type):
+        # Get all pieces at this station (handling multiple pieces if needed)
+        pieces_to_cook = []
         if station_name in self.station_contents:
-            piece = self.station_contents[station_name]
+            # We check if it's a list or a single piece
+            content = self.station_contents[station_name]
+            if isinstance(content, list):
+                pieces_to_cook = content
+            else:
+                pieces_to_cook = [content]
+                
+        for piece in pieces_to_cook:
             piece.add_operation(op_type)
+            print(f"[LOGIC] {piece.name} at {station_name}: {op_type}={piece.operations[op_type]}")
             
             # Update Neopixels for food doneness (only for heat stations)
             req = config.THRESHOLDS.get(piece.name, {}).get(op_type, 0)
@@ -184,14 +194,20 @@ class GameLogic:
                 piece = GamePiece(f"TMP_{ing_name}", ing_name)
                 
                 # Find the right station for it based on thresholds
+                station_name = None
                 if ing_name in config.THRESHOLDS:
                     reqs = config.THRESHOLDS[ing_name]
                     if reqs.get("spins", 0) > 0:
-                        self.station_contents["Vegetable Washer"] = piece
+                        station_name = "Vegetable Washer"
                     elif reqs.get("tosses", 0) > 0:
-                        self.station_contents["Frying Pan 1"] = piece
+                        station_name = "Frying Pan 1"
                     elif reqs.get("presses", 0) > 0:
-                        self.station_contents["Deep Fryer 1"] = piece
+                        station_name = "Deep Fryer 1"
+                
+                if station_name:
+                    if station_name not in self.station_contents:
+                        self.station_contents[station_name] = []
+                    self.station_contents[station_name].append(piece)
             # ---------------------------------------------------
 
     def _reset_all_doneness(self):
@@ -280,7 +296,12 @@ class GameLogic:
         required = [ing for ing in self.active_recipe["ingredients"] if ing.strip()]
         
         # Check plate contents AND station contents (for manual testing)
-        all_available_pieces = list(self.plate_contents.values()) + list(self.station_contents.values())
+        all_available_pieces = list(self.plate_contents.values())
+        for content in self.station_contents.values():
+            if isinstance(content, list):
+                all_available_pieces.extend(content)
+            else:
+                all_available_pieces.append(content)
         
         for piece in all_available_pieces:
             if piece.name in required:
