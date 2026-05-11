@@ -40,14 +40,14 @@ class DisplayService:
             
         pygame.display.set_caption("PEAK HOUR | EXECUTIVE CHEF")
         
-        # --- PREMIUM DESIGN TOKENS ---
-        self.CLR_BG = (12, 12, 12)          # Deep Space Black
-        self.CLR_PANEL = (25, 25, 28)       # Dark Slate
-        self.CLR_ACCENT = (0, 229, 255)     # Electric Cyan
-        self.CLR_SUCCESS = (0, 230, 118)    # Vibrant Green
-        self.CLR_DANGER = (255, 23, 68)     # Hot Pink/Red
-        self.CLR_TEXT = (245, 245, 245)
-        self.CLR_TEXT_DIM = (140, 140, 140)
+        # --- CLASSIC LIGHT DESIGN TOKENS ---
+        self.CLR_BG = (245, 245, 245)          # Soft White
+        self.CLR_PANEL = (225, 225, 230)       # Light Gray
+        self.CLR_ACCENT = (0, 102, 204)        # Professional Blue
+        self.CLR_SUCCESS = (0, 150, 0)         # Forest Green
+        self.CLR_DANGER = (200, 0, 0)          # Solid Red
+        self.CLR_TEXT = (20, 20, 20)           # Deep Black
+        self.CLR_TEXT_DIM = (80, 80, 80)       # Dim Gray
         
         # Debug Button Rects (Repositioned for 800x480)
         btn_y = self.height - 70
@@ -107,9 +107,9 @@ class DisplayService:
         
         # Subtle Grid
         for x in range(0, self.width, 40):
-            pygame.draw.line(self.screen, (20, 20, 25), (x, 0), (x, self.height))
+            pygame.draw.line(self.screen, (230, 230, 235), (x, 0), (x, self.height))
         for y in range(0, self.height, 40):
-            pygame.draw.line(self.screen, (20, 20, 25), (0, y), (self.width, y))
+            pygame.draw.line(self.screen, (230, 230, 235), (0, y), (self.width, y))
         
         if state == "idle":
             self.draw_idle()
