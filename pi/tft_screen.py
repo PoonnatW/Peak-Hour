@@ -19,6 +19,7 @@ def setup_tft():
             device=0, 
             gpio_DC=22, 
             gpio_RST=27, 
+            gpio_CS=26,
             bus_speed_hz=8000000
         )
         
@@ -71,7 +72,7 @@ def draw_game_state(device, logic):
                 draw.text((10, 70), f"ORDER: {recipe['name']}", fill="white", font=font)
                 
             # Completed ingredients
-            ready_count = sum(1 for p in logic.station_contents.values() if p.state == "plated")
+            ready_count = sum(1 for items in logic.station_contents.values() for p in items if p.state == "plated")
             total_count = len(recipe['ingredients']) if recipe else 0
             draw.text((10, 100), f"PLATED: {ready_count}/{total_count}", fill="green", font=font)
             
