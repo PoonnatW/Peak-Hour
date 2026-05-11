@@ -271,13 +271,16 @@ class GameLogic:
         self._handle_operation("Deep Fryer 2", "presses")
 
     def lid_button_pressed(self):
-        # Lid Button (GPIO 5) -> Confirm Order / Start Countdown
+        # Lid Button (GPIO 5) -> Confirm Order / Ring Bell
         print(f"[DEBUG] Lid Button Pressed! Current State: {self.state}")
         
         if self.state in ["recipe_scanned", "showcase"]:
             print("[LOGIC] Order Confirmed! Starting countdown...")
             self.change_state("countdown")
             self.display.play_sound("countdown")
+        elif self.state == "playing":
+            print("[LOGIC] Bell rung! Checking order...")
+            self.bell_pressed()
         else:
             print(f"[LOGIC] Lid Button ignored because state is {self.state}")
 
