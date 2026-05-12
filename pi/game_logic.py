@@ -52,7 +52,8 @@ class GameLogic:
         self.state = "idle"
         self.state_time = time.time()
         self.ice_cream_flavors = []
-        self.last_rfid_seen = {} # Tracking RFID timestamps for toss detection
+        self.last_rfid_seen = {} # {uid: timestamp}
+        self.station_last_seen = {} # {station_name: timestamp}
         
     def load_data(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -133,42 +134,30 @@ class GameLogic:
                     print(f"[LOGIC] {piece.name} moved to {station_name}")
                 # Otherwise, if it's a known station
                 elif station_name != "Unknown":
-                    if station_name not in self.station_contents:
-                        self.station_contents[station_name] = []
-                    
-                    # Stations hold lists
-                    if isinstance(self.station_contents[station_name], list):
-                        self.station_contents[station_name].append(piece)
-                    else:
-                        # Convert to list if it was a single piece (legacy safety)
-                        self.station_contents[station_name] = [self.station_contents[station_name], piece]
-                    
+                    self.station_contents[station_name] = piece
                     piece.location = station_name
-                    print(f"[LOGIC] {piece.name} moved to {station_name}")
-                    if not isinstance(self.station_contents[station_name], list):
-                        self.station_contents[station_name] = [self.station_contents[station_name]]
-                    
-                    self.station_contents[station_name].append(piece)
-                    piece.location = station_name
-                    print(f"[LOGIC] {piece.name} moved to {station_name}")
+                    self.station_last_seen[station_name] = time.time()
+                    print(f"[LOGIC] {piece.name} detected at {station_name}")
                     
         elif msg_type == "SPIN":
-            # SPINS happen at Vegetable Washer
-            self._handle_operation("Vegetable Washer", "spins")
+            if self.state == "playing":
+                # SPINS happen at Vegetable Washer
+                self._handle_operation("Vegetable Washer", "spins")
             
         elif msg_type == "TOSS":
-            if reader_id in config.STATIONS:
+            if self.state == "playing" and reader_id in config.STATIONS:
                 station_name = config.STATIONS[reader_id]
                 self._handle_operation(station_name, "tosses")
                 
         elif msg_type == "BTN":
-            # buttons are 0 or 1 mapping to Deep Fryer 1 or 2
-            # ID mapping based on workplan docs:
-            # BTN 0 -> Deep Fryer 1 (Station ID 11)
-            # BTN 1 -> Deep Fryer 2 (Station ID 12)
-            station_map = {0: "Deep Fryer 1", 1: "Deep Fryer 2"}
-            if reader_id in station_map:
-                self._handle_operation(station_map[reader_id], "presses")
+            if self.state == "playing":
+                # buttons are 0 or 1 mapping to Deep Fryer 1 or 2
+                # ID mapping based on workplan docs:
+                # BTN 0 -> Deep Fryer 1 (Station ID 11)
+                # BTN 1 -> Deep Fryer 2 (Station ID 12)
+                station_map = {0: "Deep Fryer 1", 1: "Deep Fryer 2"}
+                if reader_id in station_map:
+                    self._handle_operation(station_map[reader_id], "presses")
                 
         elif msg_type == "ANLG":
             # Analog value for ice cream
@@ -232,8 +221,13 @@ class GameLogic:
                 pieces_to_cook = [content]
                 
         for piece in pieces_to_cook:
-            piece.add_operation(op_type)
-            print(f"[LOGIC] {piece.name} at {station_name}: {op_type}={piece.operations[op_type]}")
+            # Check if this operation is actually needed for this ingredient
+            reqs = config.THRESHOLDS.get(piece.name, {})
+            if reqs.get(op_type, 0) > 0:
+                piece.add_operation(op_type)
+                print(f"[LOGIC] {piece.name} at {station_name}: {op_type}={piece.operations[op_type]}")
+            else:
+                print(f"[LOGIC] {op_type} ignored for {piece.name} (Not required)")
             
             # Update Neopixels for food doneness
             req = config.THRESHOLDS.get(piece.name, {}).get(op_type, 0)
@@ -359,6 +353,15 @@ class GameLogic:
             print(f"[LOGIC] Lid Button ignored because state is {self.state}")
 
     def update(self):
+        # Cleanup stale station contents (2-second presence requirement)
+        now = time.time()
+        for name in list(self.station_contents.keys()):
+            last_seen = self.station_last_seen.get(name, 0)
+            if now - last_seen > 2.0:
+                # Piece was likely picked up or moved without a new scan
+                del self.station_contents[name]
+                print(f"[LOGIC] Station {name} cleared (RFID timeout)")
+
         # Update AS5600 for Vegetable Washer via hardware controller
         if self.hardware:
             self.hardware.update()
