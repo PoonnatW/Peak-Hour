@@ -54,6 +54,7 @@ class GameLogic:
         self.ice_cream_flavors = []
         self.last_rfid_seen = {} # {uid: timestamp}
         self.station_last_seen = {} # {station_name: timestamp}
+        self.piece_registry = {} # {uid -> GamePiece} — survives stale-cleanup evictions
         
     def load_data(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -174,21 +175,29 @@ class GameLogic:
                     print(f"[LOGIC] Serial Bell ignored: Too early ({elapsed_play:.1f}s)")
                 
     def _get_or_create_piece(self, uid, name):
-        # Look for existing piece to maintain doneness state
-        # Check stations (handling potential lists)
+        # Registry lookup — preserves operation counts even after stale-cleanup eviction.
+        if uid in self.piece_registry:
+            return self.piece_registry[uid]
+
+        # Fallback: search live station/plate contents (e.g. virtual pieces), then create.
         for content in self.station_contents.values():
             if isinstance(content, list):
                 for p in content:
-                    if p.uid == uid: return p
+                    if p.uid == uid:
+                        self.piece_registry[uid] = p
+                        return p
             elif content and content.uid == uid:
+                self.piece_registry[uid] = content
                 return content
 
-        # Check plates
         for piece in self.plate_contents.values():
             if piece.uid == uid:
+                self.piece_registry[uid] = piece
                 return piece
 
-        return GamePiece(uid, name)
+        piece = GamePiece(uid, name)
+        self.piece_registry[uid] = piece
+        return piece
 
     def _remove_piece_from_all_locations(self, piece):
         """Removes a piece from all station_contents and plate_contents."""
@@ -242,9 +251,11 @@ class GameLogic:
                             print(f"[LOGIC] Auto-populated {ing_name} at {station_name}")
                         break
 
-        # Get all pieces at this station
+        # Get all pieces at this station, refreshing the stale timer so consecutive
+        # button presses / spins don't evict the piece between operations.
         pieces_to_cook = []
         if station_name in self.station_contents:
+            self.station_last_seen[station_name] = time.time()
             content = self.station_contents[station_name]
             pieces_to_cook = content if isinstance(content, list) else [content]
                 
@@ -320,6 +331,7 @@ class GameLogic:
             # ---------------------------------------------------
 
     def _reset_all_doneness(self):
+        self.piece_registry = {}
         self.station_contents = {}
         self.plate_contents = {}
         # Turn off all LEDs
@@ -342,15 +354,6 @@ class GameLogic:
     def hardware_button_pressed(self):
         # Base Button (GPIO 6) -> Deep Fryer
         print(f"[DEBUG] Base Button (Fries) Pressed! State: {self.state}")
-        
-        # Check if anyone is actually at the fryer
-        fryer1 = self.station_contents.get("Deep Fryer 1")
-        fryer2 = self.station_contents.get("Deep Fryer 2")
-        
-        if not fryer1 and not fryer2:
-            print("[LOGIC] Fries Button ignored: No ingredient detected at Deep Fryer stations.")
-            return
-
         self._handle_operation("Deep Fryer 1", "presses")
         self._handle_operation("Deep Fryer 2", "presses")
 
