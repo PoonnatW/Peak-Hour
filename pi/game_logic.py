@@ -439,8 +439,8 @@ class GameLogic:
             remaining = 480 - elapsed
             
             # --- INACTIVITY CHECK ---
-            if now - self.last_activity_time > 20:
-                print("[LOGIC] Inactivity timeout (20s) - You lose!")
+            if now - self.last_activity_time > 90:
+                print("[LOGIC] Inactivity timeout (90s) - You lose!")
                 self.display.show_error("Too slow! You're fired.")
                 self.display.play_sound("error")
                 self.change_state("lose")
