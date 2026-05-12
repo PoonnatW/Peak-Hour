@@ -36,7 +36,14 @@ class SerialHandler:
         while self.running:
             try:
                 if ser.in_waiting > 0:
-                    line = ser.readline().decode('utf-8').strip()
+                    raw_line = ser.readline()
+                    try:
+                        line = raw_line.decode('utf-8').strip()
+                    except UnicodeDecodeError:
+                        # Fallback to latin-1 to see what's happening without crashing
+                        line = raw_line.decode('latin-1', errors='ignore').strip()
+                        print(f"[SERIAL] Encoding issue on {ser.name}, decoded as Latin-1: {line}")
+                    
                     if line:
                         self._parse_and_dispatch(line)
             except OSError as e:
