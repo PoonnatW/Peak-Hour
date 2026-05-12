@@ -382,6 +382,33 @@ class GameLogic:
                 self.change_state("lose")
             elif remaining <= 60 and remaining + 1 > 60:
                 self.display.play_sound("alarm")
+            
+            # --- AUTO-WIN CHECK ---
+            if self.active_recipe:
+                required = [ing for ing in self.active_recipe["ingredients"] if ing.strip()]
+                all_available_pieces = list(self.plate_contents.values())
+                for content in self.station_contents.values():
+                    if isinstance(content, list): all_available_pieces.extend(content)
+                    else: all_available_pieces.append(content)
+                
+                # Check if every requirement has a matching cooked piece
+                met_all = True
+                for ing_name in required:
+                    match = None
+                    for p in all_available_pieces:
+                        if p.name == ing_name and p.is_cooked():
+                            match = p
+                            all_available_pieces.remove(p)
+                            break
+                    if not match:
+                        met_all = False
+                        break
+                
+                if met_all:
+                    print("[LOGIC] All food requirements met! Auto-winning shift...")
+                    self.display.play_sound("win")
+                    self.change_state("win")
+            # ----------------------
         elif self.state in ["win", "lose"]:
             if elapsed > 5:
                 self.reset_pressed()
