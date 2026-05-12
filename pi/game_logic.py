@@ -241,9 +241,11 @@ class GameLogic:
                             print(f"[LOGIC] Auto-populated {ing_name} at {station_name}")
                         break
 
-        # Get all pieces at this station
+        # Get all pieces at this station, refreshing the stale timer so consecutive
+        # button presses / spins don't evict the piece between operations.
         pieces_to_cook = []
         if station_name in self.station_contents:
+            self.station_last_seen[station_name] = time.time()
             content = self.station_contents[station_name]
             pieces_to_cook = content if isinstance(content, list) else [content]
                 
@@ -341,15 +343,6 @@ class GameLogic:
     def hardware_button_pressed(self):
         # Base Button (GPIO 6) -> Deep Fryer
         print(f"[DEBUG] Base Button (Fries) Pressed! State: {self.state}")
-        
-        # Check if anyone is actually at the fryer
-        fryer1 = self.station_contents.get("Deep Fryer 1")
-        fryer2 = self.station_contents.get("Deep Fryer 2")
-        
-        if not fryer1 and not fryer2:
-            print("[LOGIC] Fries Button ignored: No ingredient detected at Deep Fryer stations.")
-            return
-
         self._handle_operation("Deep Fryer 1", "presses")
         self._handle_operation("Deep Fryer 2", "presses")
 
