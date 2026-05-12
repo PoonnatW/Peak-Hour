@@ -195,12 +195,12 @@ class HardwareController:
                 self.clk.off()
                 time.sleep(0.0001)
             
-            # 3. Match bits to flavors
+            # 3. Match exact codes to single flavors
             active_flavors = []
-            if code & 0x80: active_flavors.append("Strawberry")
-            if code & 0x40: active_flavors.append("Chocolate")
-            if code & 0x20: active_flavors.append("Vanilla")
-            if code & 0x10: active_flavors.append("Mint Chocolate Chip")
+            if code == 0x80: active_flavors.append("Strawberry")
+            elif code == 0x40: active_flavors.append("Chocolate")
+            elif code == 0xC0: active_flavors.append("Vanilla")
+            elif code == 0x20: active_flavors.append("Mint Chocolate Chip")
             
             return active_flavors
         except Exception as e:
