@@ -55,6 +55,7 @@ class GameLogic:
         self.last_rfid_seen = {} # {uid: timestamp}
         self.station_last_seen = {} # {station_name: timestamp}
         self.piece_registry = {} # {uid -> GamePiece} — survives stale-cleanup evictions
+        self.last_activity_time = time.time()
         
     def load_data(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -79,6 +80,7 @@ class GameLogic:
                     }
 
     def process_message(self, msg_type, msg_id, value):
+        self.last_activity_time = time.time()
         # The real hardware might send IDs like "1-6" or "1:0", focus on the first number
         if isinstance(msg_id, str):
             # Split by common separators and take the first part
@@ -349,15 +351,18 @@ class GameLogic:
     def change_state(self, new_state):
         self.state = new_state
         self.state_time = time.time()
+        self.last_activity_time = time.time()
         print(f"[LOGIC] State changed to: {new_state}")
 
     def hardware_button_pressed(self):
+        self.last_activity_time = time.time()
         # Base Button (GPIO 6) -> Deep Fryer
         print(f"[DEBUG] Base Button (Fries) Pressed! State: {self.state}")
         self._handle_operation("Deep Fryer 1", "presses")
         self._handle_operation("Deep Fryer 2", "presses")
 
     def lid_button_pressed(self):
+        self.last_activity_time = time.time()
         # Lid Button (GPIO 5) -> Confirm Order / Ring Bell
         print(f"[DEBUG] Lid Button Pressed! Current State: {self.state}")
         
@@ -393,6 +398,7 @@ class GameLogic:
             self.hardware.update()
             while self.hardware.spins > self.consumed_spins:
                 print(f"[LOGIC] Consuming spin {self.consumed_spins + 1} from hardware")
+                self.last_activity_time = time.time()
                 self._handle_operation("Vegetable Washer", "spins")
                 self.consumed_spins += 1
 
@@ -417,6 +423,15 @@ class GameLogic:
                 # display game start splash is pending
         elif self.state == "playing":
             remaining = 480 - elapsed
+            
+            # --- INACTIVITY CHECK ---
+            if now - self.last_activity_time > 20:
+                print("[LOGIC] Inactivity timeout (20s) - You lose!")
+                self.display.show_error("Too slow! You're fired.")
+                self.display.play_sound("error")
+                self.change_state("lose")
+                return
+
             if remaining <= 0:
                 self.display.show_error("Time's up!")
                 self.display.play_sound("error")
