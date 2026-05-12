@@ -219,8 +219,13 @@ class DisplayService:
             if piece['presses_req'] > 0: ops.append(f"F:{piece['presses']}/{piece['presses_req']}")
             
             status_str = " ".join(ops) if ops else "READY"
+            color = self.CLR_TEXT
+            if piece.get('plated', False):
+                status_str = "PLATED"
+                color = self.CLR_SUCCESS
+            
             # Smaller text for status to avoid overlap
-            self.render_text(status_str, y_pos + 25, x=x_pos, size="sub", color=self.CLR_TEXT)
+            self.render_text(status_str, y_pos + 25, x=x_pos, size="sub", color=color)
 
         # Bottom Bar
         bar_rect = pygame.Rect(0, self.height - 80, self.width, 80)
