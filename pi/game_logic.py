@@ -54,6 +54,7 @@ class GameLogic:
         self.ice_cream_flavors = []
         self.last_rfid_seen = {} # {uid: timestamp}
         self.station_last_seen = {} # {station_name: timestamp}
+        self.piece_registry = {} # {uid -> GamePiece} — survives stale-cleanup evictions
         
     def load_data(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -173,21 +174,29 @@ class GameLogic:
                     print(f"[LOGIC] Serial Bell ignored: Too early ({elapsed_play:.1f}s)")
                 
     def _get_or_create_piece(self, uid, name):
-        # Look for existing piece to maintain doneness state
-        # Check stations (handling potential lists)
+        # Registry lookup — preserves operation counts even after stale-cleanup eviction.
+        if uid in self.piece_registry:
+            return self.piece_registry[uid]
+
+        # Fallback: search live station/plate contents (e.g. virtual pieces), then create.
         for content in self.station_contents.values():
             if isinstance(content, list):
                 for p in content:
-                    if p.uid == uid: return p
+                    if p.uid == uid:
+                        self.piece_registry[uid] = p
+                        return p
             elif content and content.uid == uid:
+                self.piece_registry[uid] = content
                 return content
 
-        # Check plates
         for piece in self.plate_contents.values():
             if piece.uid == uid:
+                self.piece_registry[uid] = piece
                 return piece
 
-        return GamePiece(uid, name)
+        piece = GamePiece(uid, name)
+        self.piece_registry[uid] = piece
+        return piece
 
     def _remove_piece_from_all_locations(self, piece):
         """Removes a piece from all station_contents and plate_contents."""
@@ -321,6 +330,7 @@ class GameLogic:
             # ---------------------------------------------------
 
     def _reset_all_doneness(self):
+        self.piece_registry = {}
         self.station_contents = {}
         self.plate_contents = {}
         # Turn off all LEDs
