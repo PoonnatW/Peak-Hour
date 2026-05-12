@@ -463,7 +463,12 @@ class GameLogic:
             all_pieces = list(self.plate_contents.values())
             for content in self.station_contents.values():
                 if isinstance(content, list): all_pieces.extend(content)
-                else: all_pieces.append(content)
+                elif content: all_pieces.append(content)
+            
+            # Add virtual ice cream pieces to the display list
+            if isinstance(self.ice_cream_flavors, list):
+                for flavor in self.ice_cream_flavors:
+                    all_pieces.append(GamePiece("VIRT_IC", flavor))
             
             # Map them for display
             available_pieces = all_pieces[:]
