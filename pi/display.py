@@ -126,7 +126,7 @@ class DisplayService:
         elif state == "checking":
             self.draw_checking()
         elif state == "win":
-            self.draw_result("SHIFT COMPLETE", self.CLR_SUCCESS)
+            self.draw_result("ORDER COMPLETE!", self.CLR_SUCCESS)
         elif state == "lose":
             self.draw_result("GAME OVER", self.CLR_DANGER)
             
