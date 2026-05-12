@@ -81,7 +81,7 @@ class GameLogic:
         # The real hardware might send IDs like "1-6" or "1:0", focus on the first number
         if isinstance(msg_id, str):
             # Split by common separators and take the first part
-            msg_id = msg_id.split('-')[0].split(',')[0].split(':')[0].strip()
+            msg_id = msg_id.strip().split('-')[0].split(',')[0].split(':')[0].split()[0]
 
         # Try to convert to int for easier dictionary lookup
         try:
@@ -95,17 +95,23 @@ class GameLogic:
         elif msg_type == "RFID":
             # Extract only the first part as the UID (e.g., "3E53E79C fries 3" -> "3E53E79C")
             value = value.strip().split()[0].upper()
+            
             # Check if this is the dedicated Recipe Card sensor
             station_name = config.STATIONS.get(reader_id, "Unknown")
             if station_name == "Recipe Card":
-                print(f"[LOGIC] Recipe Card scanned at ID {reader_id}: {value}")
-                self.set_recipe(value)
+                # Ensure we only use the first part of the recipe UID as well
+                recipe_uid = value.split()[0].upper()
+                print(f"[LOGIC] Recipe Card scanned at ID {reader_id}: {recipe_uid}")
+                self.set_recipe(recipe_uid)
                 return
 
             # Tag arrived at a station or plate
             if value in self.pieces_db:
                 piece_name = self.pieces_db[value]
                 piece = self._get_or_create_piece(value, piece_name)
+            else:
+                print(f"[LOGIC] Unknown UID detected: '{value}' (Reader: {reader_id})")
+                return # Ignore unknown tags
                 
                 # --- RFID Toss Experience Logic ---
                 station_name = config.STATIONS.get(reader_id, "Unknown")
@@ -135,8 +141,9 @@ class GameLogic:
                     self.plate_contents[reader_id] = piece
                     piece.location = station_name
                     print(f"[LOGIC] {piece.name} moved to {station_name}")
-                # Otherwise, if it's a known station
-                elif station_name != "Unknown":
+                # Otherwise, if it's a known station or our raw scan dummy (99)
+                elif station_name != "Unknown" or reader_id == 99:
+                    if reader_id == 99: station_name = "Preparation Table"
                     self.station_contents[station_name] = piece
                     piece.location = station_name
                     self.station_last_seen[station_name] = time.time()
@@ -356,15 +363,6 @@ class GameLogic:
             print(f"[LOGIC] Lid Button ignored because state is {self.state}")
 
     def update(self):
-        # Cleanup stale station contents (2-second presence requirement)
-        now = time.time()
-        for name in list(self.station_contents.keys()):
-            last_seen = self.station_last_seen.get(name, 0)
-            if now - last_seen > 2.0:
-                # Piece was likely picked up or moved without a new scan
-                del self.station_contents[name]
-                print(f"[LOGIC] Station {name} cleared (RFID timeout)")
-
         # Update AS5600 for Vegetable Washer via hardware controller
         if self.hardware:
             self.hardware.update()

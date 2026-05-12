@@ -47,16 +47,35 @@ class SerialHandler:
                 time.sleep(0.5)
                 
     def _parse_and_dispatch(self, line):
-        # Format: TYPE:ID:VALUE (but hardware might send TYPE:ID:EXTRA:VALUE)
+        # Format 1: TYPE:ID:VALUE (Preferred)
         parts = line.split(":")
         if len(parts) >= 3:
             msg_type = parts[0]
             msg_id = parts[1]
-            value = parts[-1] # Assume the actual value is always at the end
+            value = parts[-1]
             if self.callback:
                 self.callback(msg_type, msg_id, value)
-        else:
-            print(f"Malformed message: {line}")
+            return
+
+        # Format 2: TYPE:VALUE (e.g. BELL:1)
+        if len(parts) == 2:
+            msg_type = parts[0]
+            value = parts[1]
+            if self.callback:
+                self.callback(msg_type, "0", value)
+            return
+
+        # Format 3: Raw RFID (e.g. "3E53E79C fries 3")
+        # If it starts with a hex-like string of 8+ chars
+        clean_line = line.strip()
+        first_word = clean_line.split()[0]
+        if len(first_word) >= 8 and all(c in "0123456789ABCDEFabcdef" for c in first_word):
+            if self.callback:
+                # Dispatch as a generic RFID scan at dummy station 99
+                self.callback("RFID", "99", clean_line)
+            return
+
+        print(f"[SERIAL] Unrecognized format: {line}")
             
     def send_command(self, msg_type, msg_id, value):
         cmd = f"{msg_type}:{msg_id}:{value}\n".encode('utf-8')
