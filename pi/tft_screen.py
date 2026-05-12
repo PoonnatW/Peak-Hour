@@ -149,6 +149,10 @@ def draw_game_state(device, logic):
             
             if y + cell_h > device.height: break # Avoid drawing off screen
             
+            # Sort pieces to find the most "processed" ones first for better matching
+            # (Sort by sum of all operations descending)
+            available_pieces.sort(key=lambda p: sum(p.operations.values()), reverse=True)
+            
             match = None
             for p in available_pieces:
                 if p.name == ing_name:
