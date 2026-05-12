@@ -208,6 +208,10 @@ class DisplayService:
                 small = pygame.transform.smoothscale(self.assets[ing], (40, 40))
                 self.screen.blit(small, (x_pos - 20, y_pos - 20))
             
+            # Draw a border if plated
+            if piece.get('plated', False):
+                pygame.draw.rect(self.screen, self.CLR_SUCCESS, (x_pos - 45, y_pos - 25, 90, 70), width=3, border_radius=5)
+            
             # Show counts as fractions
             ops = []
             if piece['spins_req'] > 0: ops.append(f"S:{piece['spins']}/{piece['spins_req']}")

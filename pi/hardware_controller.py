@@ -10,10 +10,12 @@ except ImportError as e:
     neopixel_spi = None
 
 try:
-    from gpiozero import Button
+    from gpiozero import Button, DigitalOutputDevice, DigitalInputDevice
 except ImportError:
     print("gpiozero library not found.")
     Button = None
+    DigitalOutputDevice = None
+    DigitalInputDevice = None
 
 try:
     import smbus2
@@ -30,6 +32,7 @@ class HardwareController:
     - Base Button: GPIO 6
     - Lid Button: GPIO 5
     - AS5600: I2C Bus 4 (SDA 23, SCL 24)
+    - Ice Cream SR: QH=GPIO 23, CLK=GPIO 24, SH/LD=GPIO 25
     """
     def __init__(self, i2c_bus=4):
         global board, neopixel_spi
@@ -62,6 +65,19 @@ class HardwareController:
             except Exception as e:
                 print(f"Error initializing Buttons: {e}")
 
+        # Initialize Ice Cream Shift Register (74HC165)
+        self.qh = None
+        self.clk = None
+        self.sh_ld = None
+        if DigitalInputDevice and DigitalOutputDevice:
+            try:
+                self.qh = DigitalInputDevice(23, pull_up=False) # Yellow wire
+                self.clk = DigitalOutputDevice(24) # Green wire
+                self.sh_ld = DigitalOutputDevice(25) # White wire
+                print("Ice Cream Shift Register initialized: QH(23), CLK(24), SH/LD(25)")
+            except Exception as e:
+                print(f"Error initializing Ice Cream SR: {e}")
+
         # Initialize AS5600 via I2C (Trying Bus 4 then Bus 1)
         self.as5600_addr = 0x36
         self.bus = None
@@ -84,6 +100,7 @@ class HardwareController:
         self.spins = 0
         self.last_angle = None
         self.cumulative_angle = 0 # Track total movement for full rotations
+        self.current_flavor = "None"
 
     def _base_handler(self):
         print("[HARDWARE] Base Button (GPIO 6) Pressed!")
@@ -114,6 +131,9 @@ class HardwareController:
                     if self.cumulative_angle > 0: self.cumulative_angle -= 4096
                     else: self.cumulative_angle += 4096
             self.last_angle = angle
+            
+        # Update Ice Cream Flavor
+        self.current_flavor = self.read_ice_cream_flavor()
 
     def set_led_color(self, index, color, target="base"):
         if not self.pixels: return
@@ -152,6 +172,40 @@ class HardwareController:
             return (data[0] << 8) | data[1]
         except: return None
 
+    def read_ice_cream_flavor(self):
+        if not self.qh or not self.clk or not self.sh_ld:
+            return "None"
+            
+        try:
+            # 1. Load data into parallel register
+            self.sh_ld.off()
+            time.sleep(0.0001)
+            self.sh_ld.on()
+            
+            # 2. Shift bits out
+            code = 0
+            for i in range(8):
+                # Read QH bit (High bit first)
+                if self.qh.is_active:
+                    code |= (1 << (7 - i))
+                
+                # Pulse Clock
+                self.clk.on()
+                time.sleep(0.0001)
+                self.clk.off()
+                time.sleep(0.0001)
+            
+            # 3. Match bits to flavors
+            active_flavors = []
+            if code & 0x80: active_flavors.append("Strawberry")
+            if code & 0x40: active_flavors.append("Chocolate")
+            if code & 0x20: active_flavors.append("Vanilla")
+            if code & 0x10: active_flavors.append("Mint Chocolate Chip")
+            
+            return active_flavors
+        except Exception as e:
+            return []
+
 if __name__ == "__main__":
     # Simple test script
     import time
@@ -179,13 +233,14 @@ if __name__ == "__main__":
 
     try:
         print("\nStep 2: Monitoring Sensors & Buttons...")
-        print("(Rotate Magnet for Spins | Press Buttons for Events)")
+        print("(Rotate Magnet for Spins | Press Buttons for Events | Check Ice Cream Flavor)")
         print("(Press Ctrl+C to exit)")
         while True:
             hw.update()
             angle = hw.read_as5600_angle()
+            flavor = hw.current_flavor
             if angle is not None:
-                print(f"Angle: {angle:4d} | Spins: {hw.spins} | Cum: {int(hw.cumulative_angle):5d}", end="\r")
+                print(f"Angle: {angle:4d} | Spins: {hw.spins} | Flavor: {flavor:15s}", end="\r")
             time.sleep(0.05)
     except KeyboardInterrupt:
         print("\nTest stopped.")

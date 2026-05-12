@@ -17,6 +17,7 @@ class GamePiece:
             self.operations[op_type] += amount
 
     def is_cooked(self):
+        if self.uid == "VIRT_IC": return True # Virtual ice cream is always "cooked"
         if self.name not in config.THRESHOLDS:
             return False
             
@@ -50,6 +51,7 @@ class GameLogic:
         
         self.state = "idle"
         self.state_time = time.time()
+        self.ice_cream_flavors = []
         self.last_rfid_seen = {} # Tracking RFID timestamps for toss detection
         
     def load_data(self):
@@ -121,21 +123,28 @@ class GameLogic:
                 # Remove piece from any current location before assigning to new one
                 self._remove_piece_from_all_locations(piece)
 
+                # Get the station name from config
                 station_name = config.STATIONS.get(reader_id, "Unknown")
 
-                # If station name contains "Plate"
+                # If reader name contains "Plate", it's a plate
                 if "Plate" in station_name:
                     self.plate_contents[reader_id] = piece
                     piece.location = station_name
-                    print(f"[LOGIC] {piece.name} moved to {station_name} (ID: {reader_id})")
-                
-                # If reader is in stations
-                elif reader_id in config.STATIONS:
-                    # Stations can hold lists (for auto-population/multiple items)
+                    print(f"[LOGIC] {piece.name} moved to {station_name}")
+                # Otherwise, if it's a known station
+                elif station_name != "Unknown":
                     if station_name not in self.station_contents:
                         self.station_contents[station_name] = []
                     
-                    # Ensure it's a list
+                    # Stations hold lists
+                    if isinstance(self.station_contents[station_name], list):
+                        self.station_contents[station_name].append(piece)
+                    else:
+                        # Convert to list if it was a single piece (legacy safety)
+                        self.station_contents[station_name] = [self.station_contents[station_name], piece]
+                    
+                    piece.location = station_name
+                    print(f"[LOGIC] {piece.name} moved to {station_name}")
                     if not isinstance(self.station_contents[station_name], list):
                         self.station_contents[station_name] = [self.station_contents[station_name]]
                     
@@ -358,6 +367,9 @@ class GameLogic:
                 self._handle_operation("Vegetable Washer", "spins")
                 self.consumed_spins += 1
 
+        if self.hardware:
+            self.ice_cream_flavors = self.hardware.current_flavor # This is now a list
+
         now = time.time()
         elapsed = now - self.state_time
         
@@ -390,6 +402,11 @@ class GameLogic:
                 for content in self.station_contents.values():
                     if isinstance(content, list): all_available_pieces.extend(content)
                     else: all_available_pieces.append(content)
+                
+                # Add virtual pieces for the currently detected ice cream flavors
+                if isinstance(self.ice_cream_flavors, list):
+                    for flavor in self.ice_cream_flavors:
+                        all_available_pieces.append(GamePiece("VIRT_IC", flavor))
                 
                 # Check if every requirement has a matching cooked piece
                 met_all = True
