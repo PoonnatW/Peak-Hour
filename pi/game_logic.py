@@ -123,6 +123,10 @@ class GameLogic:
                     # If seen before, and between 0.5s and 5.0s ago, count as a TOSS
                     if 0.5 <= elapsed <= 5.0:
                         print(f"[LOGIC] RFID Toss detected at {station_name}!")
+                        # Pre-place the correct piece before firing TOSS so _handle_operation
+                        # counts on this ingredient, not whatever recipe order picks first.
+                        self.station_contents[station_name] = piece
+                        self.station_last_seen[station_name] = now
                         self.process_message("TOSS", str(reader_id), "1")
                     
                     self.last_rfid_seen[reader_id][value] = now
@@ -229,29 +233,39 @@ class GameLogic:
                     if isinstance(content, list): all_pieces.extend(content)
                     elif content: all_pieces.append(content)
                 
-                # Find the first requirement that isn't satisfied yet
+                # Pass 1: prefer a piece that was actually RFID-scanned (registry, non-virtual).
+                # This ensures the right ingredient is used even when recipe order differs
+                # from what the player physically placed at the station.
+                found = False
                 for ing_name in required:
                     if not ing_name.strip(): continue
-                    reqs = config.THRESHOLDS.get(ing_name, {})
-                    target_count = reqs.get(op_type, 0)
-                    
-                    if target_count > 0:
-                        # Check if we already have a piece for this that is unfinished
-                        found_unfinished = False
-                        for p in all_pieces:
-                            if p.name == ing_name and p.operations[op_type] < target_count:
-                                # This piece is already tracked and needs more work
-                                # If it's not at a station, we "move" it here
-                                self.station_contents[station_name] = p
-                                found_unfinished = True
-                                break
-                        
-                        if not found_unfinished:
-                            # Create a new virtual piece for this requirement
-                            piece = GamePiece("VIRTUAL_" + ing_name + "_" + str(time.time()), ing_name)
-                            self.station_contents[station_name] = piece
-                            print(f"[LOGIC] Auto-populated {ing_name} at {station_name}")
+                    target_count = config.THRESHOLDS.get(ing_name, {}).get(op_type, 0)
+                    if target_count <= 0: continue
+                    for uid, p in self.piece_registry.items():
+                        if p.name == ing_name and not uid.startswith("VIRTUAL_") and p.operations[op_type] < target_count:
+                            self.station_contents[station_name] = p
+                            found = True
+                            break
+                    if found:
                         break
+
+                # Pass 2: fall back to already-tracked virtual/in-station pieces, then create new.
+                if not found:
+                    for ing_name in required:
+                        if not ing_name.strip(): continue
+                        target_count = config.THRESHOLDS.get(ing_name, {}).get(op_type, 0)
+                        if target_count > 0:
+                            found_unfinished = False
+                            for p in all_pieces:
+                                if p.name == ing_name and p.operations[op_type] < target_count:
+                                    self.station_contents[station_name] = p
+                                    found_unfinished = True
+                                    break
+                            if not found_unfinished:
+                                piece = GamePiece("VIRTUAL_" + ing_name + "_" + str(time.time()), ing_name)
+                                self.station_contents[station_name] = piece
+                                print(f"[LOGIC] Auto-populated {ing_name} at {station_name}")
+                            break
 
         # Get all pieces at this station, refreshing the stale timer so consecutive
         # button presses / spins don't evict the piece between operations.
