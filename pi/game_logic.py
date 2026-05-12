@@ -62,7 +62,8 @@ class GameLogic:
             with open(pieces_path, 'r') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    self.pieces_db[row['UID']] = row['Ingredient']
+                    uid = row['UID'].strip().upper()
+                    self.pieces_db[uid] = row['Ingredient'].strip()
                     
         recipes_path = os.path.join(base_dir, "recipes.csv")
         if os.path.exists(recipes_path):
@@ -89,9 +90,10 @@ class GameLogic:
             reader_id = msg_id
 
         if msg_type == "RCPE":
-            self.set_recipe(value)
+            self.set_recipe(value.strip().upper())
             
         elif msg_type == "RFID":
+            value = value.strip().upper()
             # Check if this is the dedicated Recipe Card sensor
             station_name = config.STATIONS.get(reader_id, "Unknown")
             if station_name == "Recipe Card":
