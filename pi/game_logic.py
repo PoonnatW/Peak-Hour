@@ -144,24 +144,18 @@ class GameLogic:
                     print(f"[LOGIC] {piece.name} detected at {station_name}")
                     
         elif msg_type == "SPIN":
-            if self.state == "playing":
-                # SPINS happen at Vegetable Washer
-                self._handle_operation("Vegetable Washer", "spins")
+            # SPINS happen at Vegetable Washer
+            self._handle_operation("Vegetable Washer", "spins")
             
         elif msg_type == "TOSS":
-            if self.state == "playing" and reader_id in config.STATIONS:
-                station_name = config.STATIONS[reader_id]
-                self._handle_operation(station_name, "tosses")
+            station_name = config.STATIONS.get(reader_id, "Unknown")
+            self._handle_operation(station_name, "tosses")
                 
         elif msg_type == "BTN":
-            if self.state == "playing":
-                # buttons are 0 or 1 mapping to Deep Fryer 1 or 2
-                # ID mapping based on workplan docs:
-                # BTN 0 -> Deep Fryer 1 (Station ID 11)
-                # BTN 1 -> Deep Fryer 2 (Station ID 12)
-                station_map = {0: "Deep Fryer 1", 1: "Deep Fryer 2"}
-                if reader_id in station_map:
-                    self._handle_operation(station_map[reader_id], "presses")
+            # buttons are 0 or 1 mapping to Deep Fryer 1 or 2
+            station_map = {0: "Deep Fryer 1", 1: "Deep Fryer 2"}
+            if reader_id in station_map:
+                self._handle_operation(station_map[reader_id], "presses")
                 
         elif msg_type == "ANLG":
             # Analog value for ice cream
@@ -214,24 +208,48 @@ class GameLogic:
                 del self.plate_contents[plate_id]
 
     def _handle_operation(self, station_name, op_type):
-        # Get all pieces at this station (handling multiple pieces if needed)
+        # If the station is empty, try to "auto-detect" based on recipe needs
+        if station_name not in self.station_contents or not self.station_contents[station_name]:
+            if self.active_recipe:
+                required = self.active_recipe["ingredients"]
+                all_pieces = list(self.plate_contents.values())
+                for content in self.station_contents.values():
+                    if isinstance(content, list): all_pieces.extend(content)
+                    elif content: all_pieces.append(content)
+                
+                # Find the first requirement that isn't satisfied yet
+                for ing_name in required:
+                    if not ing_name.strip(): continue
+                    reqs = config.THRESHOLDS.get(ing_name, {})
+                    target_count = reqs.get(op_type, 0)
+                    
+                    if target_count > 0:
+                        # Check if we already have a piece for this that is unfinished
+                        found_unfinished = False
+                        for p in all_pieces:
+                            if p.name == ing_name and p.operations[op_type] < target_count:
+                                # This piece is already tracked and needs more work
+                                # If it's not at a station, we "move" it here
+                                self.station_contents[station_name] = p
+                                found_unfinished = True
+                                break
+                        
+                        if not found_unfinished:
+                            # Create a new virtual piece for this requirement
+                            piece = GamePiece("VIRTUAL_" + ing_name + "_" + str(time.time()), ing_name)
+                            self.station_contents[station_name] = piece
+                            print(f"[LOGIC] Auto-populated {ing_name} at {station_name}")
+                        break
+
+        # Get all pieces at this station
         pieces_to_cook = []
         if station_name in self.station_contents:
-            # We check if it's a list or a single piece
             content = self.station_contents[station_name]
-            if isinstance(content, list):
-                pieces_to_cook = content
-            else:
-                pieces_to_cook = [content]
+            pieces_to_cook = content if isinstance(content, list) else [content]
                 
         for piece in pieces_to_cook:
-            # Check if this operation is actually needed for this ingredient
-            reqs = config.THRESHOLDS.get(piece.name, {})
-            if reqs.get(op_type, 0) > 0:
-                piece.add_operation(op_type)
-                print(f"[LOGIC] {piece.name} at {station_name}: {op_type}={piece.operations[op_type]}")
-            else:
-                print(f"[LOGIC] {op_type} ignored for {piece.name} (Not required)")
+            piece.add_operation(op_type)
+            print(f"[LOGIC] {piece.name} at {station_name}: {op_type}={piece.operations[op_type]}")
             
             # Update Neopixels for food doneness
             req = config.THRESHOLDS.get(piece.name, {}).get(op_type, 0)
