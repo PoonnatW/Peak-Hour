@@ -71,10 +71,10 @@ class HardwareController:
         self.sh_ld = None
         if DigitalInputDevice and DigitalOutputDevice:
             try:
-                self.qh = DigitalInputDevice(23, pull_up=False) # Yellow wire
-                self.clk = DigitalOutputDevice(24) # Green wire
-                self.sh_ld = DigitalOutputDevice(25) # White wire
-                print("Ice Cream Shift Register initialized: QH(23), CLK(24), SH/LD(25)")
+                self.qh = DigitalInputDevice(25, pull_up=False) # Yellow wire
+                self.clk = DigitalOutputDevice(7) # Green wire
+                self.sh_ld = DigitalOutputDevice(12) # White wire
+                print("Ice Cream Shift Register initialized: QH(25), CLK(7), SH/LD(12)")
             except Exception as e:
                 print(f"Error initializing Ice Cream SR: {e}")
 
