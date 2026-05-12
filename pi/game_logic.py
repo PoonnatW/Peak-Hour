@@ -152,9 +152,10 @@ class GameLogic:
             self._handle_operation(station_name, "tosses")
                 
         elif msg_type == "BTN":
-            station_name = config.STATIONS.get(reader_id, "Unknown")
-            if "Deep Fryer" in station_name:
-                self._handle_operation(station_name, "presses")
+            # buttons are 0 or 1 mapping to Deep Fryer 1 or 2
+            station_map = {0: "Deep Fryer 1", 1: "Deep Fryer 2"}
+            if reader_id in station_map:
+                self._handle_operation(station_map[reader_id], "presses")
                 
         elif msg_type == "ANLG":
             # Analog value for ice cream
@@ -172,28 +173,19 @@ class GameLogic:
                     print(f"[LOGIC] Serial Bell ignored: Too early ({elapsed_play:.1f}s)")
                 
     def _get_or_create_piece(self, uid, name):
-        # 1. Exact UID match (stations then plates)
+        # Look for existing piece to maintain doneness state
+        # Check stations (handling potential lists)
         for content in self.station_contents.values():
             if isinstance(content, list):
                 for p in content:
                     if p.uid == uid: return p
             elif content and content.uid == uid:
                 return content
+
+        # Check plates
         for piece in self.plate_contents.values():
             if piece.uid == uid:
                 return piece
-
-        # 2. Name match at a station — adopt virtual/auto-detected piece by assigning
-        #    the real UID so its accumulated operations survive the move to plate.
-        for content in self.station_contents.values():
-            if isinstance(content, list):
-                for p in content:
-                    if p.name == name:
-                        p.uid = uid
-                        return p
-            elif content and content.name == name:
-                content.uid = uid
-                return content
 
         return GamePiece(uid, name)
 
@@ -248,11 +240,6 @@ class GameLogic:
                             self.station_contents[station_name] = piece
                             print(f"[LOGIC] Auto-populated {ing_name} at {station_name}")
                         break
-
-        # Refresh the stale timer whenever an operation fires at this station.
-        # BTN presses and spins have no RFID signal to do this automatically.
-        if station_name in self.station_contents:
-            self.station_last_seen[station_name] = time.time()
 
         # Get all pieces at this station
         pieces_to_cook = []
@@ -329,7 +316,6 @@ class GameLogic:
                     if station_name not in self.station_contents:
                         self.station_contents[station_name] = []
                     self.station_contents[station_name].append(piece)
-                    self.station_last_seen[station_name] = time.time()
             # ---------------------------------------------------
 
     def _reset_all_doneness(self):
