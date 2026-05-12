@@ -93,8 +93,7 @@ class GameLogic:
             self.set_recipe(value.strip().upper())
             
         elif msg_type == "RFID":
-            # Extract only the first part as the UID (e.g., "3E53E79C fries 3" -> "3E53E79C")
-            value = value.strip().split()[0].upper()
+            value = value.strip().upper()
             # Check if this is the dedicated Recipe Card sensor
             station_name = config.STATIONS.get(reader_id, "Unknown")
             if station_name == "Recipe Card":
