@@ -241,11 +241,11 @@ class DisplayService:
         self.screen.fill(self.CLR_PANEL)
         self.render_text("VERIFYING INGREDIENTS...", self.height // 2, size="main", color=self.CLR_ACCENT)
 
-    def draw_result(self, text, color):
-        self.screen.fill(self.CLR_BG)
+    def draw_result(self, text, bg_color):
+        self.screen.fill(bg_color)
         # Shadow effect
-        self.render_text(text, self.height // 2 + 4, size="title", color=(20, 20, 20))
-        self.render_text(text, self.height // 2, size="title", color=color)
+        self.render_text(text, self.height // 2 + 4, size="title", color=(0, 0, 0, 100))
+        self.render_text(text, self.height // 2, size="title", color=(255, 255, 255))
 
     def render_text(self, text, y, x=None, size="main", color=(255, 255, 255)):
         if x is None: x = self.width // 2
